@@ -11,7 +11,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import kotlin.math.min
-import kotlin.math.sqrt
 
 data class Bubble(
     val row: Int,
@@ -179,13 +178,12 @@ class BubbleGridView @JvmOverloads constructor(
 
         // Draw all bubbles
         for ((index, bubble) in bubbles.withIndex()) {
-            drawBubble(canvas, bubble, index)
+            drawBubble(canvas, bubble)
         }
     }
 
-    private fun drawBubble(canvas: Canvas, b: Bubble, index: Int) {
+    private fun drawBubble(canvas: Canvas, b: Bubble) {
         val scale = b.animScale
-        val r = b.radius * scale
         val cx = b.cx
         val cy = b.cy
 
