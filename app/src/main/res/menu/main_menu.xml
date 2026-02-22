@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_reset"
+        android:title="@string/reset"
+        android:icon="@drawable/ic_refresh"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/menu_grid_size"
+        android:title="@string/grid_size"
+        app:showAsAction="never">
+        <menu>
+            <item android:id="@+id/menu_4x4" android:title="4 × 4  (16 bubbles)"/>
+            <item android:id="@+id/menu_5x5" android:title="5 × 5  (25 bubbles)"/>
+            <item android:id="@+id/menu_6x6" android:title="6 × 6  (36 bubbles)"/>
+            <item android:id="@+id/menu_7x7" android:title="7 × 7  (49 bubbles)"/>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/menu_color_theme"
+        android:title="@string/color_theme"
+        app:showAsAction="never">
+        <menu>
+            <item android:id="@+id/menu_theme_rainbow" android:title="🌈 Rainbow"/>
+            <item android:id="@+id/menu_theme_pink"    android:title="🌸 Pink"/>
+            <item android:id="@+id/menu_theme_blue"    android:title="💙 Blue"/>
+            <item android:id="@+id/menu_theme_pastel"  android:title="🎀 Pastel"/>
+        </menu>
+    </item>
+
+</menu>

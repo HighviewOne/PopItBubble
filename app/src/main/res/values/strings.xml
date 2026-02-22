@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PopItBubble</string>
+    <string name="reset">Reset</string>
+    <string name="grid_size">Grid Size</string>
+    <string name="color_theme">Color Theme</string>
+    <string name="all_popped">All Popped!</string>
+    <string name="popped_label">Popped: </string>
+</resources>
