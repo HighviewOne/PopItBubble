@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PopItBubble – Fidget Sensory App</title>
+  <meta name="description" content="A satisfying Pop-It bubble fidget sensory app for Android. Tap, drag and pop all the bubbles!"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1A1A2E;
+      --bg2:      #16213E;
+      --bg3:      #0F3460;
+      --pink:     #FF6B9D;
+      --purple:   #C44DFF;
+      --blue:     #4D9FFF;
+      --teal:     #4DFFB4;
+      --yellow:   #FFD14D;
+      --orange:   #FF8C4D;
+      --text:     #FFFFFF;
+      --muted:    #B0B8CC;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Bubble canvas background ── */
+    #bubble-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 52, 96, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--pink), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-decoration: none;
+    }
+    nav a.nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .9rem;
+      transition: color .2s;
+    }
+    nav a.nav-link:hover { color: var(--text); }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+
+    /* ── Sections wrapper ── */
+    main { position: relative; z-index: 1; }
+
+    section { padding: 80px 24px; max-width: 960px; margin: 0 auto; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 24px;
+      max-width: 100%;
+      padding-top: 100px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(255,107,157,.15);
+      border: 1px solid rgba(255,107,157,.35);
+      color: var(--pink);
+      font-size: .82rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 8vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -.02em;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--pink) 0%, var(--purple) 50%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn:hover { transform: translateY(-2px); opacity: .92; }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(196,77,255,.35);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.15);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,.14); }
+
+    /* ── Pop-it demo widget ── */
+    .demo-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 48px;
+    }
+
+    .pop-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      padding: 24px;
+      background: rgba(22,33,62,.7);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .bubble {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: transform .12s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .bubble::before {
+      content: '';
+      position: absolute;
+      top: 10%;
+      left: 12%;
+      width: 38%;
+      height: 35%;
+      border-radius: 50%;
+      background: rgba(255,255,255,.45);
+      pointer-events: none;
+    }
+    .bubble:hover:not(.popped) { transform: scale(1.08); }
+    .bubble.popping { animation: pop-anim .2s ease forwards; }
+    .bubble.popped {
+      background: radial-gradient(circle, #1a1a3e 0%, #0f1528 100%) !important;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,.6) !important;
+      cursor: default;
+    }
+    .bubble.popped::before { display: none; }
+
+    @keyframes pop-anim {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(.62); }
+      100% { transform: scale(.88); }
+    }
+
+    .demo-reset {
+      text-align: center;
+      margin-top: 16px;
+    }
+    .demo-reset button {
+      background: none;
+      border: 1px solid rgba(255,255,255,.2);
+      color: var(--muted);
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+    }
+    .demo-reset button:hover { border-color: var(--pink); color: var(--pink); }
+
+    /* ── Section title ── */
+    .section-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .section-title h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .section-title p {
+      color: var(--muted);
+      margin-top: 10px;
+      font-size: 1.05rem;
+    }
+
+    /* ── Features grid ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 28px 24px;
+      transition: transform .2s, border-color .2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,107,157,.4);
+    }
+    .feature-icon { font-size: 2rem; margin-bottom: 14px; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { color: var(--muted); font-size: .92rem; line-height: 1.6; }
+
+    /* ── Themes row ── */
+    .themes-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .theme-chip {
+      padding: 10px 22px;
+      border-radius: 50px;
+      font-size: .9rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    /* ── Download section ── */
+    #download {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(196,77,255,.1), rgba(77,159,255,.1));
+      border-radius: 24px;
+      border: 1px solid rgba(196,77,255,.2);
+      padding: 64px 32px;
+    }
+    #download h2 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    #download p { color: var(--muted); margin-bottom: 32px; font-size: 1.05rem; }
+    .download-note {
+      margin-top: 16px;
+      font-size: .82rem;
+      color: var(--muted);
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--muted);
+      font-size: .85rem;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    footer a { color: var(--pink); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .bubble { width: 44px; height: 44px; }
+      .pop-grid { gap: 8px; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Floating bubble background -->
+<canvas id="bubble-bg"></canvas>
+
+<nav>
+  <a href="#" class="nav-brand">🫧 PopItBubble</a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#demo"     class="nav-link">Try It</a>
+    <a href="#download" class="nav-link">Download</a>
+    <a href="https://github.com/HighviewOne/PopItBubble" target="_blank" class="nav-link">GitHub</a>
+  </div>
+</nav>
+
+<main>
+  <!-- Hero -->
+  <div class="hero" style="max-width:960px;margin:0 auto;padding:100px 24px 60px;">
+    <span class="hero-badge">Free Android App</span>
+    <h1>Pop Every <span>Bubble</span>.<br>Feel the Satisfaction.</h1>
+    <p class="hero-sub">
+      A silky-smooth fidget sensory experience right on your phone.
+      Tap, drag, and pop your way to calm.
+    </p>
+    <div class="hero-buttons">
+      <a href="#download" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7 7-7z"/>
+        </svg>
+        Download APK
+      </a>
+      <a href="https://github.com/HighviewOne/PopItBubble" target="_blank" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+        </svg>
+        View on GitHub
+      </a>
+    </div>
+  </div>
+
+  <!-- Interactive demo -->
+  <section id="demo" style="padding-top:0;">
+    <div class="section-title">
+      <h2>Try It Right Here 👆</h2>
+      <p>Click the bubbles below to get a feel for the app</p>
+    </div>
+    <div class="demo-wrap">
+      <div>
+        <div class="pop-grid" id="demoGrid"></div>
+        <div class="demo-reset"><button onclick="resetDemo()">↺ Reset bubbles</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="section-title">
+      <h2>Everything You'd Want</h2>
+      <p>Built for the best possible fidget experience</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>4 Color Themes</h3>
+        <p>Switch between Rainbow, Pink, Blue, and Pastel palettes to match your mood.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📐</div>
+        <h3>Adjustable Grid</h3>
+        <p>Choose 4×4, 5×5, 6×6, or 7×7 — from a quick 16-bubble pop to a marathon 49.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔊</div>
+        <h3>Satisfying Sounds</h3>
+        <p>Four unique pop sound variations with pitch randomization for a natural feel.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📳</div>
+        <h3>Haptic Feedback</h3>
+        <p>Every pop comes with a crisp 25ms vibration pulse — just like the real thing.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👆</div>
+        <h3>Multi-Touch</h3>
+        <p>Drag multiple fingers across the grid to pop a whole row in one smooth sweep.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎉</div>
+        <h3>Auto-Reset</h3>
+        <p>Pop every bubble and watch the celebration, then it automatically refills for another round.</p>
+      </div>
+    </div>
+
+    <!-- Themes chips -->
+    <div style="text-align:center;margin-top:56px;">
+      <h3 style="font-size:1.1rem;color:var(--muted);font-weight:600;margin-bottom:20px;">AVAILABLE THEMES</h3>
+      <div class="themes-row">
+        <span class="theme-chip" style="background:linear-gradient(135deg,#FF6B9D,#C44DFF,#4D9FFF,#4DFFB4,#FFD14D);">🌈 Rainbow</span>
+        <span class="theme-chip" style="background:linear-gradient(135deg,#FFB3D1,#FF4D94);">🌸 Pink</span>
+        <span class="theme-chip" style="background:linear-gradient(135deg,#B3D9FF,#0066CC);">💙 Blue</span>
+        <span class="theme-chip" style="background:linear-gradient(135deg,#FFD1DC,#E8D1FF,#D1F0FF);">🎀 Pastel</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section style="padding-top:0;">
+    <div id="download">
+      <h2>Get PopItBubble Free</h2>
+      <p>Download the APK and sideload it on any Android device (API 24+)</p>
+      <a href="https://github.com/HighviewOne/PopItBubble/releases/latest" class="btn btn-primary" style="font-size:1.1rem;padding:16px 36px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7 7-7z"/>
+        </svg>
+        Download Latest APK
+      </a>
+      <p class="download-note">
+        Enable <strong>Install from unknown sources</strong> in Android settings before installing.<br>
+        Requires Android 7.0 (Nougat) or higher.
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Made with ❤️ · <a href="https://github.com/HighviewOne/PopItBubble">Open source on GitHub</a> · MIT License</p>
+</footer>
+
+<script>
+  /* ── Floating bubble background ── */
+  (function () {
+    const canvas = document.getElementById('bubble-bg');
+    const ctx = canvas.getContext('2d');
+    const COLORS = ['#FF6B9D','#C44DFF','#4D9FFF','#4DFFB4','#FFD14D','#FF8C4D'];
+    let bubbles = [];
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    for (let i = 0; i < 18; i++) {
+      bubbles.push({
+        x: rand(0, window.innerWidth),
+        y: rand(0, window.innerHeight),
+        r: rand(20, 60),
+        vx: rand(-.25, .25),
+        vy: rand(-.18, .18),
+        color: COLORS[i % COLORS.length],
+        alpha: rand(.04, .12)
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const b of bubbles) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = b.color + Math.round(b.alpha * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.x < -b.r) b.x = canvas.width + b.r;
+        if (b.x > canvas.width + b.r) b.x = -b.r;
+        if (b.y < -b.r) b.y = canvas.height + b.r;
+        if (b.y > canvas.height + b.r) b.y = -b.r;
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+
+  /* ── Interactive demo grid ── */
+  const DEMO_COLORS = [
+    'radial-gradient(circle at 35% 35%, #ff9dc2, #FF6B9D, #c0205a)',
+    'radial-gradient(circle at 35% 35%, #d580ff, #C44DFF, #8a00cc)',
+    'radial-gradient(circle at 35% 35%, #80c2ff, #4D9FFF, #0055cc)',
+    'radial-gradient(circle at 35% 35%, #80ffe0, #4DFFB4, #00a86b)',
+    'radial-gradient(circle at 35% 35%, #ffe880, #FFD14D, #cc9900)',
+    'radial-gradient(circle at 35% 35%, #ffb380, #FF8C4D, #cc4400)',
+  ];
+
+  const grid = document.getElementById('demoGrid');
+  let clickCount = 0;
+
+  function buildDemo() {
+    grid.innerHTML = '';
+    for (let i = 0; i < 25; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.style.background = DEMO_COLORS[i % DEMO_COLORS.length];
+      b.style.boxShadow   = `0 6px 16px rgba(0,0,0,.4)`;
+      b.addEventListener('click', () => popDemoBubble(b));
+      b.addEventListener('touchstart', (e) => { e.preventDefault(); popDemoBubble(b); }, { passive: false });
+      grid.appendChild(b);
+    }
+    clickCount = 0;
+  }
+
+  function popDemoBubble(el) {
+    if (el.classList.contains('popped') || el.classList.contains('popping')) return;
+    el.classList.add('popping');
+    el.style.boxShadow = 'none';
+    setTimeout(() => {
+      el.classList.remove('popping');
+      el.classList.add('popped');
+      clickCount++;
+      if (clickCount === 25) {
+        setTimeout(() => {
+          const msg = document.createElement('div');
+          msg.textContent = '🎉 All Popped!';
+          msg.style.cssText = 'text-align:center;color:#FF6B9D;font-weight:800;font-size:1.2rem;margin-bottom:8px;animation:fadeIn .4s ease';
+          grid.parentElement.insertBefore(msg, grid);
+          setTimeout(() => { msg.remove(); resetDemo(); }, 1400);
+        }, 200);
+      }
+    }, 200);
+  }
+
+  function resetDemo() {
+    buildDemo();
+  }
+
+  buildDemo();
+</script>
+</body>
+</html>
