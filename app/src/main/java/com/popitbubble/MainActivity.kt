@@ -4,12 +4,12 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.BounceInterpolator
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -29,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+
+        Prefs.load(this)
 
         soundManager = SoundManager(this)
         bubbleGridView = findViewById(R.id.bubbleGridView)
@@ -127,6 +129,9 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.menu_theme_pastel -> {
                 bubbleGridView.currentTheme = "pastel"; true
+            }
+            R.id.menu_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java)); true
             }
             else -> super.onOptionsItemSelected(item)
         }

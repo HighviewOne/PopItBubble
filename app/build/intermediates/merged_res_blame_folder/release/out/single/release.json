@@ -1,0 +1,30 @@
+[
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/menu_main_menu.xml.flat",
+        "source": "com.popitbubble.app-main-32:/menu/main_menu.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/drawable_ic_refresh.xml.flat",
+        "source": "com.popitbubble.app-main-32:/drawable/ic_refresh.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/drawable_celebration_bg.xml.flat",
+        "source": "com.popitbubble.app-main-32:/drawable/celebration_bg.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/drawable_ic_launcher.xml.flat",
+        "source": "com.popitbubble.app-main-32:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/layout_activity_settings.xml.flat",
+        "source": "com.popitbubble.app-main-32:/layout/activity_settings.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/layout_activity_main.xml.flat",
+        "source": "com.popitbubble.app-main-32:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.popitbubble.app-merged_res-31:/drawable_ic_launcher_round.xml.flat",
+        "source": "com.popitbubble.app-main-32:/drawable/ic_launcher_round.xml"
+    }
+]

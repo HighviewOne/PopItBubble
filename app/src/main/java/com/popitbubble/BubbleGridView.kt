@@ -315,10 +315,10 @@ class BubbleGridView @JvmOverloads constructor(
         bubble.isPopped = true
 
         // Sound
-        soundManager?.playPop()
+        if (Prefs.soundEnabled) soundManager?.playPop()
 
         // Haptic feedback
-        vibrate()
+        if (Prefs.hapticEnabled) vibrate()
 
         // Pop animation: squeeze down then settle
         animators[index]?.cancel()

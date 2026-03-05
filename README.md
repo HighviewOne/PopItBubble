@@ -11,13 +11,11 @@ A satisfying **Pop-It fidget sensory app** for Android. Tap or drag across the s
 
 ---
 
-## Screenshots
+## Demo
 
-| Inflated bubbles | Popped state | All popped! |
-|---|---|---|
-| *(Rainbow 5×5 grid)* | *(Concave popped bubbles)* | *(Celebration overlay)* |
+![PopItBubble demo animation](docs/assets/demo.gif)
 
-> Real screenshots coming soon. Try the [interactive browser demo](https://highviewone.github.io/PopItBubble/#demo) in the meantime!
+<img src="docs/assets/screenshot.png" alt="PopItBubble screenshot" width="270"/>
 
 ---
 
@@ -33,6 +31,7 @@ A satisfying **Pop-It fidget sensory app** for Android. Tap or drag across the s
 | ✨ **3D Bubble Rendering** | RadialGradient dome with specular highlight using Canvas |
 | 🎉 **Celebration** | Animated overlay + auto-reset when all bubbles are popped |
 | 📊 **Pop Counter** | Live `X / Total` count in the header bar |
+| ⚙️ **Settings** | Toggle sound and haptic feedback independently |
 
 ---
 
@@ -73,31 +72,45 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ```
 PopItBubble/
-├── app/src/main/
-│   ├── java/com/popitbubble/
+├── app/src/
+│   ├── main/java/com/popitbubble/
 │   │   ├── MainActivity.kt       # Toolbar, menu, counter, celebration
 │   │   ├── BubbleGridView.kt     # Custom View — Canvas drawing, touch, animation
-│   │   └── SoundManager.kt       # Programmatic WAV generation + SoundPool
-│   └── res/
-│       ├── layout/activity_main.xml
-│       ├── menu/main_menu.xml    # Grid size + color theme options
-│       └── values/               # Colors, strings, themes
-└── docs/                         # GitHub Pages landing page
+│   │   ├── SoundManager.kt       # Programmatic WAV generation + SoundPool
+│   │   ├── SettingsActivity.kt   # Sound / haptic toggle screen
+│   │   ├── GridMath.kt           # Pure grid calculation utilities (testable)
+│   │   └── Prefs.kt              # SharedPreferences wrapper
+│   └── test/java/com/popitbubble/
+│       └── GridMathTest.kt       # JVM unit tests (no Android required)
+└── docs/                         # GitHub Pages landing page + assets
 ```
 
 ### Architecture
 
-- **`BubbleGridView`** — single custom `View` that draws the entire grid on `Canvas`.
+- **`BubbleGridView`** — single custom `View` drawing the entire grid on `Canvas`.
   Uses `RadialGradient` for the 3D dome effect and `ValueAnimator` with `OvershootInterpolator` for the pop spring-back.
-- **`SoundManager`** — generates pop sounds at runtime using white noise + low-frequency tone + click transient, writes them to cache WAV files, and plays via `SoundPool` for low latency.
+- **`SoundManager`** — generates pop sounds at runtime: white noise + low-frequency tone + click transient, written to cache WAV files and played via `SoundPool` for sub-20 ms latency.
+- **`GridMath`** — pure Kotlin object with zero Android dependencies, containing all geometric calculations (bubble radius, centre, hit-testing, colour blending). Fully unit-tested on the JVM.
 - **No third-party libraries** — only AndroidX + Material Components.
+
+---
+
+## Tech Highlights
+
+| Area | Detail |
+|---|---|
+| **Custom rendering** | `BubbleGridView` bypasses XML layouts entirely — every bubble is drawn with `Canvas.drawCircle` + multi-stop `RadialGradient` for a convincing 3D silicone look |
+| **Touch handling** | `onTouchEvent` iterates all active pointers on `ACTION_MOVE`, enabling true multi-finger drag-to-pop |
+| **Sound synthesis** | Pop sounds are generated in-process (white noise envelope + low-frequency resonance) — no bundled audio assets, zero APK bloat |
+| **Low-latency audio** | `SoundPool` (not `MediaPlayer`) keeps playback latency under 20 ms |
+| **Haptics** | `VibrationEffect.createOneShot` on API 26+, with graceful fallback for older devices |
+| **Animation** | `ValueAnimator` with `OvershootInterpolator` gives the characteristic "squish-and-spring" pop feel |
+| **Testability** | All geometry logic is in `GridMath` — pure Kotlin, no Android deps, runs on the JVM in milliseconds |
 
 ---
 
 ## Roadmap
 
-- [ ] Record and add real screenshots / GIF
-- [ ] Sound toggle (on/off)
 - [ ] Haptic strength slider
 - [ ] Timed challenge mode (pop all bubbles as fast as you can)
 - [ ] High-score leaderboard
