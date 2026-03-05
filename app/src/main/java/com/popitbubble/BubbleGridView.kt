@@ -67,6 +67,22 @@ class BubbleGridView @JvmOverloads constructor(
             Color.parseColor("#D1FFD6"),
             Color.parseColor("#FFF5D1"),
             Color.parseColor("#E8D1FF"),
+        ),
+        "neon" to listOf(
+            Color.parseColor("#FF00FF"),  // electric magenta
+            Color.parseColor("#00FFFF"),  // electric cyan
+            Color.parseColor("#00FF41"),  // matrix green
+            Color.parseColor("#FF6600"),  // electric orange
+            Color.parseColor("#FFFF00"),  // electric yellow
+            Color.parseColor("#0066FF"),  // electric blue
+        ),
+        "candy" to listOf(
+            Color.parseColor("#FF6EB4"),  // bubblegum pink
+            Color.parseColor("#FF9A3C"),  // tangerine
+            Color.parseColor("#FFE44D"),  // lemon
+            Color.parseColor("#5CE65C"),  // lime
+            Color.parseColor("#5CC8FF"),  // sky blue
+            Color.parseColor("#C87CFF"),  // grape
         )
     )
 

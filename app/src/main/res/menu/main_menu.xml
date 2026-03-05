@@ -21,6 +21,11 @@
     </item>
 
     <item
+        android:id="@+id/menu_challenge"
+        android:title="⏱  Challenge Mode"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/menu_settings"
         android:title="Settings"
         app:showAsAction="never"/>
@@ -34,6 +39,8 @@
             <item android:id="@+id/menu_theme_pink"    android:title="🌸 Pink"/>
             <item android:id="@+id/menu_theme_blue"    android:title="💙 Blue"/>
             <item android:id="@+id/menu_theme_pastel"  android:title="🎀 Pastel"/>
+            <item android:id="@+id/menu_theme_neon"    android:title="⚡ Neon"/>
+            <item android:id="@+id/menu_theme_candy"   android:title="🍬 Candy"/>
         </menu>
     </item>
 
