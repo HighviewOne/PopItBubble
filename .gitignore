@@ -4,8 +4,11 @@
 /.idea
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
 *.apk
 *.aab
+generate_demo.py
+generate_screenshot.py
