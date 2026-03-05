@@ -55,6 +55,10 @@ class MainActivity : AppCompatActivity() {
 
         bubbleGridView.onPopListener = { popped, total ->
             updateCounter(popped, total)
+            // Challenge mode: the timer is lazy-started on the very first pop so the
+            // clock doesn't begin ticking the moment the user opens the menu. We set
+            // Chronometer.base to elapsedRealtime() right before calling start() so
+            // the displayed time always reflects actual popping time, not setup time.
             if (challengeMode && !challengeStarted && popped == 1) {
                 challengeStarted = true
                 chronometer.base = SystemClock.elapsedRealtime()
@@ -64,6 +68,9 @@ class MainActivity : AppCompatActivity() {
 
         bubbleGridView.onAllPoppedListener = {
             if (challengeMode && challengeStarted) {
+                // Stop the Chronometer immediately, then capture elapsed time.
+                // We compute elapsed ourselves (elapsedRealtime - base) rather than
+                // parsing the text string so the value stays millisecond-accurate.
                 chronometer.stop()
                 val elapsed = SystemClock.elapsedRealtime() - chronometer.base
                 checkBestTime(elapsed)

@@ -15,7 +15,9 @@ A satisfying **Pop-It fidget sensory app** for Android. Tap or drag across the s
 
 ![PopItBubble demo animation](docs/assets/demo.gif)
 
-<img src="docs/assets/screenshot.png" alt="PopItBubble screenshot" width="270"/>
+| Rainbow grid | ⚡ Neon + Challenge Mode |
+|:---:|:---:|
+| <img src="docs/assets/screenshot.png" width="220"/> | <img src="docs/assets/challenge_neon.png" width="220"/> |
 
 ---
 
@@ -33,6 +35,26 @@ A satisfying **Pop-It fidget sensory app** for Android. Tap or drag across the s
 | 📊 **Pop Counter** | Live `X / Total` count in the header bar |
 | ⚙️ **Settings** | Toggle sound and haptic feedback independently |
 | ⏱️ **Challenge Mode** | Race the clock — timer starts on first pop, tracks personal best |
+
+### How Challenge Mode works
+
+1. Tap **⋮ → ⏱ Challenge Mode** to toggle it on. A timer bar appears below the pop counter.
+2. The clock **doesn't start** until you pop your first bubble — no penalty for switching the menu or thinking.
+3. Pop all bubbles as fast as you can. The clock stops the moment the last bubble pops.
+4. Your time is shown in the celebration overlay (e.g. `🎉 4.2s! 🎉`).
+5. If it's your fastest run, it's saved as your **personal best** and displayed next to the timer on every future run.
+6. Tap ↺ (FAB or menu) to reset and try again. Best time persists across sessions.
+
+---
+
+## What's New in v1.1.0
+
+- ⚡ **Neon theme** — electric magenta, cyan, matrix green, orange, yellow, blue with glow rim
+- 🍬 **Candy theme** — bubblegum pink, tangerine, lemon, lime, sky blue, grape
+- ⏱️ **Challenge Mode** — timed runs with personal best stored in SharedPreferences
+- ⚙️ **Settings screen** — sound and haptic toggles that persist across launches
+- 🧪 **Unit + UI tests** — 12 JVM tests (`GridMathTest`) and 4 Espresso tests (`BubblePopTest`)
+- 🏗️ **CI** — GitHub Actions builds APK and runs lint on every push
 
 ---
 
