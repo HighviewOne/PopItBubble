@@ -116,7 +116,7 @@ PopItBubble/
   Uses `RadialGradient` for the 3D dome effect and `ValueAnimator` with `OvershootInterpolator` for the pop spring-back.
 - **`SoundManager`** — generates pop sounds at runtime: white noise + low-frequency tone + click transient, written to cache WAV files and played via `SoundPool` for sub-20 ms latency.
 - **`GridMath`** — pure Kotlin object with zero Android dependencies, containing all geometric calculations (bubble radius, centre, hit-testing, colour blending). Fully unit-tested on the JVM.
-- **No third-party libraries** — only AndroidX + Material Components.
+- **Minimal dependencies** — AndroidX + Material Components + `kotlinx-coroutines-android` for async sound loading.
 
 ---
 

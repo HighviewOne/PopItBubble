@@ -36,6 +36,10 @@ class MainActivity : AppCompatActivity() {
         soundManager = SoundManager(this)
         binding.bubbleGridView.soundManager = soundManager
 
+        // Restore saved grid size and theme
+        binding.bubbleGridView.setGridSize(Prefs.gridSize, Prefs.gridSize)
+        binding.bubbleGridView.currentTheme = Prefs.colorTheme
+
         binding.bubbleGridView.onPopListener = { popped, total ->
             updateCounter(popped, total)
             if (challengeMode && !challengeStarted && popped == 1) {
@@ -141,6 +145,19 @@ class MainActivity : AppCompatActivity() {
         updateCounter(0, binding.bubbleGridView.getTotalCount())
     }
 
+    private fun setGridSize(size: Int) {
+        binding.bubbleGridView.setGridSize(size, size)
+        updateCounter(0, binding.bubbleGridView.getTotalCount())
+        Prefs.gridSize = size
+        Prefs.save(this)
+    }
+
+    private fun setTheme(name: String) {
+        binding.bubbleGridView.currentTheme = name
+        Prefs.colorTheme = name
+        Prefs.save(this)
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
@@ -151,16 +168,16 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_reset    -> { resetGame(); true }
             R.id.menu_challenge -> { toggleChallengeMode(); true }
             R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
-            R.id.menu_4x4 -> { binding.bubbleGridView.setGridSize(4, 4); updateCounter(0, binding.bubbleGridView.getTotalCount()); true }
-            R.id.menu_5x5 -> { binding.bubbleGridView.setGridSize(5, 5); updateCounter(0, binding.bubbleGridView.getTotalCount()); true }
-            R.id.menu_6x6 -> { binding.bubbleGridView.setGridSize(6, 6); updateCounter(0, binding.bubbleGridView.getTotalCount()); true }
-            R.id.menu_7x7 -> { binding.bubbleGridView.setGridSize(7, 7); updateCounter(0, binding.bubbleGridView.getTotalCount()); true }
-            R.id.menu_theme_rainbow -> { binding.bubbleGridView.currentTheme = "rainbow"; true }
-            R.id.menu_theme_pink   -> { binding.bubbleGridView.currentTheme = "pink";    true }
-            R.id.menu_theme_blue   -> { binding.bubbleGridView.currentTheme = "blue";    true }
-            R.id.menu_theme_pastel -> { binding.bubbleGridView.currentTheme = "pastel";  true }
-            R.id.menu_theme_neon   -> { binding.bubbleGridView.currentTheme = "neon";    true }
-            R.id.menu_theme_candy  -> { binding.bubbleGridView.currentTheme = "candy";   true }
+            R.id.menu_4x4 -> { setGridSize(4); true }
+            R.id.menu_5x5 -> { setGridSize(5); true }
+            R.id.menu_6x6 -> { setGridSize(6); true }
+            R.id.menu_7x7 -> { setGridSize(7); true }
+            R.id.menu_theme_rainbow -> { setTheme("rainbow"); true }
+            R.id.menu_theme_pink   -> { setTheme("pink");    true }
+            R.id.menu_theme_blue   -> { setTheme("blue");    true }
+            R.id.menu_theme_pastel -> { setTheme("pastel");  true }
+            R.id.menu_theme_neon   -> { setTheme("neon");    true }
+            R.id.menu_theme_candy  -> { setTheme("candy");   true }
             else -> super.onOptionsItemSelected(item)
         }
     }
