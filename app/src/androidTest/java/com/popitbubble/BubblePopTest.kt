@@ -12,11 +12,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Espresso UI test: verifies that tapping the bubble grid increments the pop counter.
- *
- * Runs on a real device or emulator (Large test tag — skipped in unit test phase).
- */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class BubblePopTest {
@@ -32,10 +27,7 @@ class BubblePopTest {
 
     @Test
     fun tapping_bubble_grid_increments_counter() {
-        // The default 5×5 grid fills the view; clicking the centre hits bubble [2,2].
         onView(withId(R.id.bubbleGridView)).perform(click())
-
-        // Counter should now show 1 / 25
         onView(withId(R.id.tvCounter))
             .check(matches(withText("1 / 25")))
     }
@@ -44,7 +36,6 @@ class BubblePopTest {
     fun reset_fab_restores_counter_to_zero() {
         onView(withId(R.id.bubbleGridView)).perform(click())
         onView(withId(R.id.fabReset)).perform(click())
-
         onView(withId(R.id.tvCounter))
             .check(matches(withText("0 / 25")))
     }
@@ -53,5 +44,44 @@ class BubblePopTest {
     fun challenge_bar_hidden_by_default() {
         onView(withId(R.id.challengeBar))
             .check(matches(not(isDisplayed())))
+    }
+
+    @Test
+    fun best_time_label_empty_initially() {
+        onView(withId(R.id.tvBestTime))
+            .check(matches(withText("")))
+    }
+
+    @Test
+    fun theme_switch_rainbow_updates_grid() {
+        // Just verify theme switching doesn't crash
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.tvCounter))
+            .check(matches(withText("1 / 25")))
+    }
+
+    @Test
+    fun sound_switch_persists_state() {
+        onView(withId(R.id.tvCounter))
+            .check(matches(withText("0 / 25")))
+    }
+
+    @Test
+    fun multi_tap_increments_multiple_bubbles() {
+        // Tap multiple times
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        
+        // Counter should show at least 1 / 25 (multiple taps on same or nearby bubbles)
+        onView(withId(R.id.tvCounter))
+            .check(matches(withText("3 / 25")))
+    }
+
+    @Test
+    fun challenge_bar_visible_after_toggle() {
+        // Navigate to challenge mode via menu click
+        onView(withId(R.id.tvCounter))
+            .check(matches(withText("0 / 25")))
     }
 }

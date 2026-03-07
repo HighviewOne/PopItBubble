@@ -2,17 +2,18 @@ package com.popitbubble
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
-import androidx.appcompat.widget.Toolbar
+import com.popitbubble.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivitySettingsBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val toolbar = findViewById<Toolbar>(R.id.settingsToolbar)
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.settingsToolbar)
         supportActionBar?.apply {
             title = "Settings"
             setDisplayHomeAsUpEnabled(true)
@@ -20,17 +21,14 @@ class SettingsActivity : AppCompatActivity() {
 
         Prefs.load(this)
 
-        val switchSound  = findViewById<SwitchCompat>(R.id.switchSound)
-        val switchHaptic = findViewById<SwitchCompat>(R.id.switchHaptic)
+        binding.switchSound.isChecked  = Prefs.soundEnabled
+        binding.switchHaptic.isChecked = Prefs.hapticEnabled
 
-        switchSound.isChecked  = Prefs.soundEnabled
-        switchHaptic.isChecked = Prefs.hapticEnabled
-
-        switchSound.setOnCheckedChangeListener { _, checked ->
+        binding.switchSound.setOnCheckedChangeListener { _, checked ->
             Prefs.soundEnabled = checked
             Prefs.save(this)
         }
-        switchHaptic.setOnCheckedChangeListener { _, checked ->
+        binding.switchHaptic.setOnCheckedChangeListener { _, checked ->
             Prefs.hapticEnabled = checked
             Prefs.save(this)
         }

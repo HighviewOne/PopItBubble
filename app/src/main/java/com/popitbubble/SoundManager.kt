@@ -3,8 +3,13 @@ package com.popitbubble
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
+import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -13,7 +18,8 @@ class SoundManager(private val context: Context) {
     private val soundPool: SoundPool
     private val popSoundIds = mutableListOf<Int>()
     private val loadedSounds = mutableSetOf<Int>()
-    private var currentIndex = 0
+    private val currentIndex = AtomicInteger(0)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
         val attrs = AudioAttributes.Builder()
@@ -30,47 +36,56 @@ class SoundManager(private val context: Context) {
             if (status == 0) loadedSounds.add(sampleId)
         }
 
-        // Generate 4 pop sound variations
-        for (i in 0 until 4) {
-            generateAndLoadSound(i)
+        // Generate or load 4 pop sound variations asynchronously
+        scope.launch {
+            for (i in 0 until 4) {
+                loadOrGenerateSound(i)
+            }
         }
     }
 
-    private fun generateAndLoadSound(variation: Int) {
-        val sampleRate = 22050
-        val durationSec = 0.13
-        val numSamples = (sampleRate * durationSec).toInt()
-        val pcm = ShortArray(numSamples)
+    private fun loadOrGenerateSound(variation: Int) {
+        val file = File(context.cacheDir, "pop_$variation.wav")
+        
+        if (!file.exists()) {
+            val sampleRate = 22050
+            val durationSec = 0.13
+            val numSamples = (sampleRate * durationSec).toInt()
+            val pcm = ShortArray(numSamples)
 
-        // Each variation has slightly different pitch and character
-        val decayRate = 20.0 + variation * 3.0
-        val toneFreq = 90.0 + variation * 25.0
-        val noiseMix = 0.65 - variation * 0.05
-        val toneMix = 0.4 + variation * 0.05
+            // Each variation has slightly different pitch and character
+            val decayRate = 20.0 + variation * 3.0
+            val toneFreq = 90.0 + variation * 25.0
+            val noiseMix = 0.65 - variation * 0.05
+            val toneMix = 0.4 + variation * 0.05
 
-        for (i in 0 until numSamples) {
-            val t = i.toDouble() / sampleRate
-            val envelope = exp(-t * decayRate)
+            for (i in 0 until numSamples) {
+                val t = i.toDouble() / sampleRate
+                val envelope = exp(-t * decayRate)
 
-            // White noise component
-            val noise = (Random.nextDouble() * 2.0 - 1.0) * noiseMix * envelope
+                // White noise component
+                val noise = (Random.nextDouble() * 2.0 - 1.0) * noiseMix * envelope
 
-            // Tonal thump component
-            val tone = sin(2.0 * PI * toneFreq * t) * toneMix * envelope
+                // Tonal thump component
+                val tone = sin(2.0 * PI * toneFreq * t) * toneMix * envelope
 
-            // Initial click transient
-            val click = if (i < 5) (1.0 - i / 5.0) * 0.3 else 0.0
+                // Initial click transient
+                val click = if (i < 5) (1.0 - i / 5.0) * 0.3 else 0.0
 
-            val sample = ((noise + tone + click) * 32767.0).toInt().coerceIn(-32767, 32767)
-            pcm[i] = sample.toShort()
+                val sample = ((noise + tone + click) * 32767.0).toInt().coerceIn(-32767, 32767)
+                pcm[i] = sample.toShort()
+            }
+
+            val wavBytes = buildWavFile(pcm, sampleRate)
+            file.writeBytes(wavBytes)
         }
 
-        val wavBytes = buildWavFile(pcm, sampleRate)
-        val file = java.io.File(context.cacheDir, "pop_$variation.wav")
-        file.writeBytes(wavBytes)
-
         val id = soundPool.load(file.absolutePath, 1)
-        if (id > 0) popSoundIds.add(id)
+        if (id > 0) {
+            synchronized(popSoundIds) {
+                popSoundIds.add(id)
+            }
+        }
     }
 
     private fun buildWavFile(pcm: ShortArray, sampleRate: Int): ByteArray {
@@ -112,11 +127,12 @@ class SoundManager(private val context: Context) {
     }
 
     fun playPop() {
-        if (popSoundIds.isEmpty()) return
-        val id = popSoundIds[currentIndex % popSoundIds.size]
-        currentIndex++
+        val ids = synchronized(popSoundIds) { popSoundIds.toList() }
+        if (ids.isEmpty()) return
+        
+        val index = currentIndex.getAndIncrement()
+        val id = ids[index % ids.size]
         if (id in loadedSounds) {
-            // Slight pitch variation for natural feel
             val pitch = 0.85f + Random.nextFloat() * 0.3f
             val vol = 0.8f + Random.nextFloat() * 0.2f
             soundPool.play(id, vol, vol, 1, 0, pitch)
@@ -125,9 +141,5 @@ class SoundManager(private val context: Context) {
 
     fun release() {
         soundPool.release()
-        // Clean up temp wav files
-        for (i in 0 until 4) {
-            java.io.File(context.cacheDir, "pop_$i.wav").delete()
-        }
     }
 }
