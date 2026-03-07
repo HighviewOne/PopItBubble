@@ -1,12 +1,14 @@
 package com.popitbubble
 
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.not
 import org.junit.Rule
 import org.junit.Test
@@ -19,31 +21,12 @@ class BubblePopTest {
     @get:Rule
     val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
+    // ── Baseline state ────────────────────────────────────────────────────────
+
     @Test
     fun counter_starts_at_zero() {
         onView(withId(R.id.tvCounter))
             .check(matches(withText("0 / 25")))
-    }
-
-    @Test
-    fun tapping_bubble_grid_increments_counter() {
-        onView(withId(R.id.bubbleGridView)).perform(click())
-        onView(withId(R.id.tvCounter))
-            .check(matches(withText("1 / 25")))
-    }
-
-    @Test
-    fun reset_fab_restores_counter_to_zero() {
-        onView(withId(R.id.bubbleGridView)).perform(click())
-        onView(withId(R.id.fabReset)).perform(click())
-        onView(withId(R.id.tvCounter))
-            .check(matches(withText("0 / 25")))
-    }
-
-    @Test
-    fun challenge_bar_hidden_by_default() {
-        onView(withId(R.id.challengeBar))
-            .check(matches(not(isDisplayed())))
     }
 
     @Test
@@ -53,35 +36,64 @@ class BubblePopTest {
     }
 
     @Test
-    fun theme_switch_rainbow_updates_grid() {
-        // Just verify theme switching doesn't crash
+    fun challenge_bar_hidden_by_default() {
+        onView(withId(R.id.challengeBar))
+            .check(matches(not(isDisplayed())))
+    }
+
+    // ── Pop behaviour ─────────────────────────────────────────────────────────
+
+    @Test
+    fun tapping_bubble_grid_increments_counter() {
         onView(withId(R.id.bubbleGridView)).perform(click())
         onView(withId(R.id.tvCounter))
             .check(matches(withText("1 / 25")))
     }
 
     @Test
-    fun sound_switch_persists_state() {
+    fun repeated_taps_at_same_spot_count_only_once() {
+        // All three taps land on the same centre bubble [2,2].
+        // Only the first tap should register; the bubble is already popped for taps 2 and 3.
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.tvCounter))
+            .check(matches(withText("1 / 25")))
+    }
+
+    // ── Reset ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun reset_fab_restores_counter_to_zero() {
+        onView(withId(R.id.bubbleGridView)).perform(click())
+        onView(withId(R.id.fabReset)).perform(click())
         onView(withId(R.id.tvCounter))
             .check(matches(withText("0 / 25")))
     }
 
-    @Test
-    fun multi_tap_increments_multiple_bubbles() {
-        // Tap multiple times
-        onView(withId(R.id.bubbleGridView)).perform(click())
-        onView(withId(R.id.bubbleGridView)).perform(click())
-        onView(withId(R.id.bubbleGridView)).perform(click())
-        
-        // Counter should show at least 1 / 25 (multiple taps on same or nearby bubbles)
-        onView(withId(R.id.tvCounter))
-            .check(matches(withText("3 / 25")))
-    }
+    // ── Challenge Mode ────────────────────────────────────────────────────────
 
     @Test
     fun challenge_bar_visible_after_toggle() {
-        // Navigate to challenge mode via menu click
+        openActionBarOverflowOrOptionsMenu(
+            InstrumentationRegistry.getInstrumentation().targetContext
+        )
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        onView(withId(R.id.challengeBar)).check(matches(isDisplayed()))
+    }
+
+    // ── Theme switching ───────────────────────────────────────────────────────
+
+    @Test
+    fun switching_to_neon_theme_does_not_crash() {
+        openActionBarOverflowOrOptionsMenu(
+            InstrumentationRegistry.getInstrumentation().targetContext
+        )
+        onView(withText("Color Theme")).perform(click())
+        onView(withText("⚡ Neon")).perform(click())
+        // Grid must still be interactive after the theme change
+        onView(withId(R.id.bubbleGridView)).perform(click())
         onView(withId(R.id.tvCounter))
-            .check(matches(withText("0 / 25")))
+            .check(matches(withText("1 / 25")))
     }
 }

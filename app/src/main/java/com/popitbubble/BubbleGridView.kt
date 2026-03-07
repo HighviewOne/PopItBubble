@@ -19,8 +19,7 @@ data class Bubble(
     var radius: Float = 0f,
     val color: Int,
     var isPopped: Boolean = false,
-    var animScale: Float = 1f,
-    var celebrateAlpha: Float = 0f
+    var animScale: Float = 1f
 )
 
 class BubbleGridView @JvmOverloads constructor(
@@ -91,7 +90,7 @@ class BubbleGridView @JvmOverloads constructor(
     fun reset() {
         animators.values.forEach { it.cancel() }
         animators.clear()
-        bubbles.forEach { it.isPopped = false; it.animScale = 1f; it.celebrateAlpha = 0f }
+        bubbles.forEach { it.isPopped = false; it.animScale = 1f }
         invalidate()
     }
 
