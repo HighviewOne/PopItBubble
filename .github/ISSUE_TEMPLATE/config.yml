@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🌐 Live Demo & Landing Page
+    url: https://highviewone.github.io/PopItBubble/
+    about: Try the app and see what it does before filing an issue.
+  - name: 💬 Questions & Discussion
+    url: https://github.com/HighviewOne/PopItBubble/discussions
+    about: Ask a question or share an idea (enable Discussions to use this).

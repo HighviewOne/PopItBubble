@@ -1,0 +1,45 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make PopItBubble more satisfying? We'd love to hear it.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Is your request related to a frustration or a missing capability?
+      placeholder: I'd love to feel a stronger vibration on each pop…
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or behavior you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about?
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the app does this touch?
+      options:
+        - Themes / visuals
+        - Sound
+        - Haptics
+        - Gameplay (grid, Challenge Mode)
+        - Accessibility
+        - Other
+    validations:
+      required: false

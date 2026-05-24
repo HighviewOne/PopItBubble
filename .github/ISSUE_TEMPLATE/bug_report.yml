@@ -1,0 +1,59 @@
+name: 🐛 Bug Report
+description: Report something that isn't working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out the sections below so we can reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I pop the last bubble in Challenge Mode, the timer keeps running…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Open the app
+        2. Switch to a 7×7 grid
+        3. Enable Challenge Mode
+        4. Pop all bubbles
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device & Android version
+      description: e.g. Pixel 7, Android 14
+      placeholder: Pixel 7 — Android 14
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Found under the overflow menu, or the release tag you installed.
+      placeholder: v1.1.0
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots / logs
+      description: Drag-and-drop screenshots or paste any relevant logcat output.
+    validations:
+      required: false

@@ -1,13 +1,21 @@
-# 🫧 PopItBubble
+<div align="center">
+
+<img src="docs/assets/banner.png" alt="PopItBubble — the satisfying Pop-It fidget, on Android" width="100%"/>
+
+<br/>
 
 [![Build](https://github.com/HighviewOne/PopItBubble/actions/workflows/android.yml/badge.svg)](https://github.com/HighviewOne/PopItBubble/actions/workflows/android.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-pink.svg)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-7.0%2B-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple.svg)](https://kotlinlang.org)
+[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84.svg?logo=android&logoColor=white)](https://developer.android.com)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/PULL_REQUEST_TEMPLATE.md)
 
-A satisfying **Pop-It fidget sensory app** for Android. Tap or drag across the silicone-style bubbles to pop them — complete with 3D animations, haptic feedback, and satisfying pop sounds.
+**A satisfying Pop-It fidget sensory app for Android.** Tap or drag across the silicone-style bubbles to pop them — complete with 3D animations, haptic feedback, and satisfying pop sounds.
 
-**[🌐 Live Demo & Landing Page →](https://highviewone.github.io/PopItBubble/)**
+[🌐 Live Demo](https://highviewone.github.io/PopItBubble/) &nbsp;•&nbsp; [⬇️ Download APK](https://github.com/HighviewOne/PopItBubble/releases/latest) &nbsp;•&nbsp; [🐛 Report a Bug](https://github.com/HighviewOne/PopItBubble/issues/new/choose)
+
+</div>
 
 ---
 
