@@ -1,0 +1,52 @@
+name: Release
+
+# Triggers when you push a tag like v1.2.0:
+#   git tag v1.2.0 && git push origin v1.2.0
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # required to create the Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        # Debug APK is signed with the Android debug key — installable by
+        # users who enable "Install from unknown sources". To ship a
+        # release-signed APK instead, add a signingConfig in
+        # app/build.gradle backed by KEYSTORE_BASE64 / KEY_* secrets and
+        # swap this for `./gradlew assembleRelease`.
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK with version tag
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             "release/PopItBubble-${GITHUB_REF_NAME}.apk"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "PopItBubble ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: release/PopItBubble-*.apk
+          fail_on_unmatched_files: true

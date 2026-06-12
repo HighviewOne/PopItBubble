@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.*
 import kotlin.random.Random
@@ -17,7 +18,9 @@ class SoundManager(private val context: Context) {
 
     private val soundPool: SoundPool
     private val popSoundIds = mutableListOf<Int>()
-    private val loadedSounds = mutableSetOf<Int>()
+    // Written from SoundPool's load-complete callback (worker thread),
+    // read from playPop() on the UI thread — must be thread-safe.
+    private val loadedSounds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
     private val currentIndex = AtomicInteger(0)
     private val scope = CoroutineScope(Dispatchers.IO)
 
