@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.PopItBubble" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.PopItBubble" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/toolbar_bg</item>
         <item name="colorPrimaryVariant">@color/bg_dark</item>
         <item name="colorOnPrimary">@color/white</item>
