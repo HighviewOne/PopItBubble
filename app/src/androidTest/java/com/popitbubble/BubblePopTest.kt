@@ -1,16 +1,18 @@
 package com.popitbubble
 
+import android.content.Context
+import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.not
-import org.junit.Rule
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -18,8 +20,23 @@ import org.junit.runner.RunWith
 @LargeTest
 class BubblePopTest {
 
-    @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    private lateinit var scenario: ActivityScenario<MainActivity>
+
+    @Before
+    fun setUp() {
+        // Start every test from defaults (5×5 grid, no best time), whatever
+        // earlier tests or manual runs saved. Clear before launching so
+        // MainActivity's Prefs.load() picks up the defaults.
+        InstrumentationRegistry.getInstrumentation().targetContext
+            .getSharedPreferences("popitbubble_prefs", Context.MODE_PRIVATE)
+            .edit().clear().commit()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+    }
+
+    @After
+    fun tearDown() {
+        scenario.close()
+    }
 
     // ── Baseline state ────────────────────────────────────────────────────────
 

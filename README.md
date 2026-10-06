@@ -7,7 +7,7 @@
 [![Build](https://github.com/HighviewOne/PopItBubble/actions/workflows/android.yml/badge.svg)](https://github.com/HighviewOne/PopItBubble/actions/workflows/android.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-pink.svg)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-7.0%2B-green.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4-purple.svg)](https://kotlinlang.org)
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84.svg?logo=android&logoColor=white)](https://developer.android.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](.github/PULL_REQUEST_TEMPLATE.md)
 
@@ -69,9 +69,9 @@
 ## How to Build
 
 ### Requirements
-- Android Studio **Giraffe (2022.3.1)** or newer
+- Android Studio **Narwhal 3 Feature Drop (2025.1.3)** or newer (for AGP 8.13)
 - JDK 17
-- Android SDK with **API level 35** platform
+- Android SDK with the **API level 36** platform (compileSdk 36, targetSdk 35)
 
 ### Steps
 
@@ -163,6 +163,25 @@ PopItBubble/
 - [ ] High-score leaderboard
 - [ ] Hexagonal grid layout
 - [ ] Accessibility: screen reader support
+
+---
+
+## Release signing
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. The tag must match
+`versionName` in `app/build.gradle` (e.g. `v1.2.0`). To publish a release-signed,
+R8-shrunk APK, add these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | `base64 -w0 release.jks` |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_ALIAS` | key alias |
+| `KEY_PASSWORD` | key password |
+
+Without them the workflow publishes a debug-signed APK and logs a warning.
+For local signed builds, put `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
+`KEY_PASSWORD` in a gitignored `keystore.properties` at the repo root.
 
 ---
 

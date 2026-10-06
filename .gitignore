@@ -10,5 +10,6 @@
 .cxx
 *.apk
 *.aab
-generate_demo.py
-generate_screenshot.py
+keystore.properties
+*.jks
+*.keystore
