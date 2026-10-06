@@ -12,6 +12,7 @@
 - On Android 15 the toolbar drew under the status bar and the FAB under the navigation bar.
 - The overflow menu icon could be invisible when the system was in light mode.
 - A second finger tapping without moving didn't pop a bubble.
+- An inflated bubble drawn right after a popped one could appear faded.
 - Possible crash on devices without a vibrator.
 - Sound loading could race with shutdown, and an interrupted write could leave a broken cached sound.
 
