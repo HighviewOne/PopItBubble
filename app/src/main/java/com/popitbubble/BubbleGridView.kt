@@ -1,5 +1,7 @@
 package com.popitbubble
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
@@ -10,6 +12,9 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.OvershootInterpolator
+import androidx.annotation.VisibleForTesting
+import androidx.core.graphics.createBitmap
+import kotlin.math.roundToInt
 
 data class Bubble(
     val row: Int,
@@ -48,14 +53,20 @@ class BubbleGridView @JvmOverloads constructor(
     private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(50, 0, 0, 0)
-        maskFilter = BlurMaskFilter(12f, BlurMaskFilter.Blur.NORMAL)
     }
+    private val spritePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
     // Shader Caches
     private val inflatedShaders = mutableMapOf<Int, Shader>()
     private val poppedShaders = mutableMapOf<Int, Shader>()
     private val innerPoppedShaders = mutableMapOf<Int, Shader>()
     private var specShader: Shader? = null
+
+    // Pre-rendered bubbles, one per colour and state. Rendering them once in
+    // software keeps BlurMaskFilter working while onDraw stays on the GPU.
+    private val inflatedSprites = mutableMapOf<Int, Bitmap>()
+    private val poppedSprites = mutableMapOf<Int, Bitmap>()
+    private var spriteHalf = 0
 
     // Animators per bubble index
     private val animators = HashMap<Int, ValueAnimator>()
@@ -77,11 +88,6 @@ class BubbleGridView @JvmOverloads constructor(
 
     // Background gradient
     private val bgPaint = Paint()
-
-    init {
-        // Required for BlurMaskFilter and some shader effects
-        setLayerType(LAYER_TYPE_SOFTWARE, null)
-    }
 
     // ─── Public API ────────────────────────────────────────────────
 
@@ -149,7 +155,7 @@ class BubbleGridView @JvmOverloads constructor(
             }
         }
 
-        prepareShaders(radius)
+        prepareRendering(radius)
         invalidate()
         onGridChangedListener?.invoke(bubbles.size)
     }
@@ -167,9 +173,36 @@ class BubbleGridView @JvmOverloads constructor(
         val colorList = currentThemeEnum.colors
         bubbles.forEachIndexed { i, b -> b.color = colorList[i % colorList.size] }
         clearShaderCaches()
-        prepareShaders(bubbles[0].radius)
+        prepareRendering(bubbles[0].radius)
         invalidate()
     }
+
+    private fun prepareRendering(r: Float) {
+        prepareShaders(r)
+        buildSprites(r)
+    }
+
+    private fun buildSprites(r: Float) {
+        inflatedSprites.clear()
+        poppedSprites.clear()
+        spriteHalf = GridMath.spriteHalfSize(r)
+        val size = spriteHalf * 2
+        currentThemeEnum.colors.distinct().forEach { color ->
+            inflatedSprites[color] = renderSprite(size) { drawInflatedBubble(it, r, color) }
+            poppedSprites[color] = renderSprite(size) { drawPoppedBubble(it, r, color) }
+        }
+    }
+
+    private inline fun renderSprite(size: Int, draw: (Canvas) -> Unit): Bitmap {
+        val bmp = createBitmap(size, size)
+        val c = Canvas(bmp)
+        c.translate(size / 2f, size / 2f)
+        draw(c)
+        return bmp
+    }
+
+    @VisibleForTesting
+    internal fun spritesForTest(): List<Bitmap> = inflatedSprites.values + poppedSprites.values
 
     private fun clearShaderCaches() {
         inflatedShaders.clear()
@@ -226,6 +259,8 @@ class BubbleGridView @JvmOverloads constructor(
     }
 
     // ─── Drawing ──────────────────────────────────────────────────
+    // drawInflatedBubble / drawPoppedBubble render into the sprite bitmaps
+    // (centred at 0,0); onDraw only blits those sprites.
 
     override fun onDraw(canvas: Canvas) {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
@@ -236,17 +271,12 @@ class BubbleGridView @JvmOverloads constructor(
     }
 
     private fun drawBubble(canvas: Canvas, b: Bubble) {
-        val r = b.radius
+        val sprite = (if (b.isPopped) poppedSprites else inflatedSprites)[b.color] ?: return
         canvas.save()
-        canvas.translate(b.cx, b.cy)
+        // Whole-pixel centre so unscaled sprites are drawn 1:1, without filtering blur.
+        canvas.translate(b.cx.roundToInt().toFloat(), b.cy.roundToInt().toFloat())
         canvas.scale(b.animScale, b.animScale)
-
-        if (b.isPopped) {
-            drawPoppedBubble(canvas, r, b.color)
-        } else {
-            drawInflatedBubble(canvas, r, b.color)
-        }
-
+        canvas.drawBitmap(sprite, -spriteHalf.toFloat(), -spriteHalf.toFloat(), spritePaint)
         canvas.restore()
     }
 
@@ -334,6 +364,11 @@ class BubbleGridView @JvmOverloads constructor(
                 bubble.animScale = it.animatedValue as Float
                 invalidate()
             }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (animators[index] === animation) animators.remove(index)
+                }
+            })
         }
         animators[index] = anim
         anim.start()

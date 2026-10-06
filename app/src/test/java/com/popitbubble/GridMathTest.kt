@@ -65,6 +65,17 @@ class GridMathTest {
         assertFalse(GridMath.isTouching(60f, 60f, 50f, 50f, 14f))
     }
 
+    // ── spriteHalfSize ────────────────────────────────────────────────────────
+
+    @Test
+    fun `spriteHalfSize covers the bubble and its drop shadow`() {
+        for (r in listOf(10f, 47.5f, 84f, 200f)) {
+            val sigma = 0.57735f * (r * 0.25f) + 0.5f
+            val shadowExtent = kotlin.math.hypot(r * 0.08f, r * 0.12f) + r * 0.92f + 2 * sigma
+            assertTrue("r=$r", GridMath.spriteHalfSize(r) >= shadowExtent)
+        }
+    }
+
     // ── colour helpers ────────────────────────────────────────────────────────
 
     @Test
