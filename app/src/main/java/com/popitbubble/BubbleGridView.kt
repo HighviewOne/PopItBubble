@@ -50,7 +50,10 @@ class BubbleGridView @JvmOverloads constructor(
         }
 
     // Paints
+    // Fills use shaders and must stay fully opaque: a shader fill is multiplied
+    // by the paint's alpha, so strokes get their own paint.
     private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(50, 0, 0, 0)
     }
@@ -287,7 +290,6 @@ class BubbleGridView @JvmOverloads constructor(
 
         // Main body
         bubblePaint.shader = inflatedShaders[color]
-        bubblePaint.style = Paint.Style.FILL
         canvas.drawCircle(0f, 0f, r, bubblePaint)
 
         // Specular
@@ -296,18 +298,15 @@ class BubbleGridView @JvmOverloads constructor(
         bubblePaint.shader = null
 
         // Soft rim
-        bubblePaint.style = Paint.Style.STROKE
-        bubblePaint.strokeWidth = r * 0.06f
+        strokePaint.strokeWidth = r * 0.06f
         val (dr, dg, db) = GridMath.darken(Color.red(color), Color.green(color), Color.blue(color), 0.15f)
-        bubblePaint.color = Color.rgb(dr, dg, db)
-        canvas.drawCircle(0f, 0f, r - r * 0.03f, bubblePaint)
-        bubblePaint.style = Paint.Style.FILL
+        strokePaint.color = Color.rgb(dr, dg, db)
+        canvas.drawCircle(0f, 0f, r - r * 0.03f, strokePaint)
     }
 
     private fun drawPoppedBubble(canvas: Canvas, r: Float, color: Int) {
         // Outer ring
         bubblePaint.shader = poppedShaders[color]
-        bubblePaint.style = Paint.Style.FILL
         canvas.drawCircle(0f, 0f, r, bubblePaint)
 
         // Inner concave
@@ -316,11 +315,9 @@ class BubbleGridView @JvmOverloads constructor(
         bubblePaint.shader = null
 
         // Subtle highlight
-        bubblePaint.style = Paint.Style.STROKE
-        bubblePaint.strokeWidth = r * 0.05f
-        bubblePaint.color = Color.argb(60, 255, 255, 255)
-        canvas.drawCircle(0f, 0f, r * 0.68f, bubblePaint)
-        bubblePaint.style = Paint.Style.FILL
+        strokePaint.strokeWidth = r * 0.05f
+        strokePaint.color = Color.argb(60, 255, 255, 255)
+        canvas.drawCircle(0f, 0f, r * 0.68f, strokePaint)
     }
 
     // ─── Touch ────────────────────────────────────────────────────
