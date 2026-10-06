@@ -3,9 +3,19 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+// Release signing is read from environment variables (CI) or a gitignored
+// keystore.properties file (local). Without them, release builds are unsigned.
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+def signingValue = { String key -> System.getenv(key) ?: keystoreProps.getProperty(key) }
+def releaseStoreFile = signingValue('KEYSTORE_FILE')
+
 android {
     namespace 'com.popitbubble'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.popitbubble"
@@ -16,25 +26,44 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseStoreFile) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword signingValue('KEYSTORE_PASSWORD')
+                keyAlias signingValue('KEY_ALIAS')
+                keyPassword signingValue('KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseStoreFile) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = '1.8'
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     buildFeatures {
         viewBinding true
     }
+
+    testOptions {
+        animationsDisabled = true
+    }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
