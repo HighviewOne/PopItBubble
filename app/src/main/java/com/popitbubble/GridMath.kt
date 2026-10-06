@@ -31,6 +31,16 @@ object GridMath {
         return dx * dx + dy * dy <= radius * radius
     }
 
+    /**
+     * Half the side length, in whole pixels, of a square sprite that fits a
+     * bubble of [radius] including its drop shadow. The shadow circle is
+     * offset by (0.08r, 0.12r) with radius 0.92r and a 0.25r blur; Skia maps a
+     * blur radius to sigma ≈ 0.577·radius + 0.5, and beyond ~2σ past the edge
+     * the 50-alpha shadow is invisible. That is about 1.35r + 1px, so 1.5r plus
+     * two pixels leaves headroom.
+     */
+    fun spriteHalfSize(radius: Float): Int = kotlin.math.ceil(radius * 1.5f).toInt() + 2
+
     /** Lighten a packed RGB colour by [factor] (0..1). */
     fun lighten(r: Int, g: Int, b: Int, factor: Float): Triple<Int, Int, Int> {
         fun chan(v: Int) = (v + ((255 - v) * factor)).toInt().coerceIn(0, 255)
