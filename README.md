@@ -38,7 +38,7 @@
 | 🔊 **Pop Sounds** | 4 programmatically-generated WAV variations with pitch randomization |
 | 📳 **Haptic Feedback** | Crisp 25 ms vibration pulse on every pop |
 | 👆 **Multi-Touch** | Drag multiple fingers to pop bubbles in one sweep |
-| ✨ **3D Bubble Rendering** | RadialGradient dome with specular highlight using Canvas |
+| ✨ **3D Bubble Rendering** | RadialGradient dome, specular highlight and soft drop shadow, pre-rendered as sprites |
 | 🎉 **Celebration** | Animated overlay + auto-reset when all bubbles are popped |
 | 📊 **Pop Counter** | Live `X / Total` count in the header bar |
 | ⚙️ **Settings** | Toggle sound and haptic feedback independently |
@@ -55,14 +55,17 @@
 
 ---
 
-## What's New in v1.1.0
+## What's New
 
-- ⚡ **Neon theme** — electric magenta, cyan, matrix green, orange, yellow, blue with glow rim
-- 🍬 **Candy theme** — bubblegum pink, tangerine, lemon, lime, sky blue, grape
-- ⏱️ **Challenge Mode** — timed runs with personal best stored in SharedPreferences
-- ⚙️ **Settings screen** — sound and haptic toggles that persist across launches
-- 🧪 **Unit + UI tests** — 12 JVM tests (`GridMathTest`) and 4 Espresso tests (`BubblePopTest`)
-- 🏗️ **CI** — GitHub Actions builds APK and runs lint on every push
+Since v1.2.0 (unreleased):
+
+- 🐛 **Game fixes** — correct pop counter on launch, Challenge Mode times no longer include the celebration delay, theme and grid changes no longer desync the counter or clock
+- 📱 **Android 15 ready** — content stays clear of the status and navigation bars under enforced edge-to-edge
+- ⚡ **Smoother rendering** — bubbles are pre-rendered sprites drawn with hardware acceleration
+- 📦 **Smaller release APK** — R8 shrinking cuts it from ~5.9 MB to ~1.5 MB
+- 🧪 **Espresso tests in CI** on an emulator, alongside unit tests and lint
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 
@@ -97,6 +100,13 @@ The debug APK will be at:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### Tests
+
+```bash
+./gradlew test                       # JVM unit tests
+./gradlew connectedDebugAndroidTest  # Espresso tests (needs a device or emulator)
+```
+
 ---
 
 ## Project Structure
@@ -110,20 +120,22 @@ PopItBubble/
 │   │   ├── SoundManager.kt       # Programmatic WAV generation + SoundPool
 │   │   ├── SettingsActivity.kt   # Sound / haptic toggle screen
 │   │   ├── GridMath.kt           # Pure grid calculation utilities (testable)
+│   │   ├── Theme.kt              # Colour themes
 │   │   └── Prefs.kt              # SharedPreferences wrapper
 │   ├── test/java/com/popitbubble/
 │   │   └── GridMathTest.kt       # JVM unit tests (no Android required)
 │   └── androidTest/java/com/popitbubble/
 │       └── BubblePopTest.kt      # Espresso UI tests
-└── docs/                         # GitHub Pages landing page + assets
+├── docs/                         # GitHub Pages landing page + assets
+└── tools/                        # Python scripts that generate docs/assets images
 ```
 
 ### Architecture
 
 - **`BubbleGridView`** — single custom `View` drawing the entire grid on `Canvas`.
-  Uses `RadialGradient` for the 3D dome effect and `ValueAnimator` with `OvershootInterpolator` for the pop spring-back.
-- **`SoundManager`** — generates pop sounds at runtime: white noise + low-frequency tone + click transient, written to cache WAV files and played via `SoundPool` for sub-20 ms latency.
-- **`GridMath`** — pure Kotlin object with zero Android dependencies, containing all geometric calculations (bubble radius, centre, hit-testing, colour blending). Fully unit-tested on the JVM.
+  Each colour's inflated and popped bubble (`RadialGradient` dome, highlight, blurred shadow) is rendered once into a bitmap sprite; `onDraw` blits the sprites with hardware acceleration. `ValueAnimator` with `OvershootInterpolator` drives the pop spring-back.
+- **`SoundManager`** — generates pop sounds at runtime: white noise + low-frequency tone + click transient, written to cache WAV files and played via low-latency `SoundPool`.
+- **`GridMath`** — pure Kotlin object with zero Android dependencies, containing the geometry (bubble radius, centre, hit-testing, sprite size) and colour blending. Unit-tested on the JVM.
 - **Minimal dependencies** — AndroidX + Material Components + `kotlinx-coroutines-android` for async sound loading.
 
 ---
@@ -132,28 +144,26 @@ PopItBubble/
 
 | Area | Detail |
 |---|---|
-| **Custom rendering** | `BubbleGridView` bypasses XML layouts entirely — every bubble is drawn with `Canvas.drawCircle` + multi-stop `RadialGradient` for a convincing 3D silicone look |
-| **Touch handling** | `onTouchEvent` iterates all active pointers on `ACTION_MOVE`, enabling true multi-finger drag-to-pop |
-| **Sound synthesis** | Pop sounds are generated in-process (white noise envelope + low-frequency resonance) — no bundled audio assets, zero APK bloat |
-| **Low-latency audio** | `SoundPool` (not `MediaPlayer`) keeps playback latency under 20 ms |
-| **Haptics** | `VibrationEffect.createOneShot` on API 26+, with graceful fallback for older devices |
+| **Custom rendering** | No per-bubble views: one `Canvas` pass draws the whole grid from cached bitmap sprites. The sprites are rendered in software once, so `BlurMaskFilter` shadows work while frames stay hardware-accelerated |
+| **Touch handling** | `onTouchEvent` checks every active pointer on `ACTION_DOWN`, `ACTION_POINTER_DOWN` and `ACTION_MOVE`, enabling multi-finger drag-to-pop |
+| **Sound synthesis** | Pop sounds are generated in-process (white noise envelope + low-frequency resonance) — no bundled audio assets |
+| **Low-latency audio** | `SoundPool` (not `MediaPlayer`) for short, frequently repeated clips |
+| **Haptics** | `VibrationEffect.createOneShot` on API 26+, with a fallback for older devices |
 | **Animation** | `ValueAnimator` with `OvershootInterpolator` gives the characteristic "squish-and-spring" pop feel |
-| **Testability** | All geometry logic is in `GridMath` — pure Kotlin, no Android deps, runs on the JVM in milliseconds |
-| **UI tests** | 4 Espresso tests cover: counter initial state, pop increments counter, FAB reset, challenge bar visibility |
+| **Edge-to-edge** | Window insets are applied to each screen, as required on Android 15 at targetSdk 35 |
+| **Testability** | Geometry lives in `GridMath` — pure Kotlin, no Android deps, runs on the JVM in milliseconds |
+| **UI tests** | Espresso tests cover the counter, popping, reset, Challenge Mode, theme switching and sprite rendering; CI runs them on an emulator |
 
 ---
 
 ## Performance
 
-| Metric | Value | Notes |
-|---|---|---|
-| **Render frame budget** | 16.7 ms (60 fps) | `ValueAnimator` is Choreographer-driven; invalidates only the animating bubble region |
-| **Draw complexity** | O(n) per frame | Single `Canvas` pass — no nested layouts, no `RecyclerView` overhead |
-| **Pop animation** | 220 ms / ~13 frames | `OvershootInterpolator` spring at 60 fps |
-| **Sound latency** | ~15–25 ms | `SoundPool` vs. ~150–400 ms for `MediaPlayer` |
-| **Haptic latency** | ~10 ms | `VibrationEffect.createOneShot` is low-level HAL call |
-| **Touch → visual** | ≤ 1 frame (16 ms) | `invalidate()` called synchronously in `onTouchEvent` |
-| **APK size** | ~5.5 MB | No bundled audio assets — sounds generated at first launch and cached |
+| Aspect | Detail |
+|---|---|
+| **Per-frame work** | Background gradient plus one bitmap blit per bubble (at most 49), hardware-accelerated |
+| **Sprite cache** | Up to 12 bitmaps (inflated + popped for each theme colour), rebuilt only when the grid size or theme changes — about 2–3 MB |
+| **Pop animation** | 220 ms `OvershootInterpolator` spring, Choreographer-driven |
+| **APK size** | ~1.5 MB release (R8 + resource shrinking), ~5.9 MB debug — no bundled audio, sounds are generated on first launch and cached |
 
 ---
 
@@ -187,7 +197,7 @@ For local signed builds, put `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` a
 
 ## Download
 
-Grab the latest debug APK from [Releases](https://github.com/HighviewOne/PopItBubble/releases/latest).
+Grab the latest APK from [Releases](https://github.com/HighviewOne/PopItBubble/releases/latest).
 
 > Enable **Install from unknown sources** in Android Settings → Apps before installing.
 
