@@ -17,7 +17,7 @@ data class Bubble(
     var cx: Float = 0f,
     var cy: Float = 0f,
     var radius: Float = 0f,
-    val color: Int,
+    var color: Int,
     var isPopped: Boolean = false,
     var animScale: Float = 1f
 )
@@ -41,8 +41,7 @@ class BubbleGridView @JvmOverloads constructor(
         get() = currentThemeEnum.displayName
         set(value) {
             currentThemeEnum = Theme.byName(value)
-            initBubbles()
-            invalidate()
+            recolorBubbles()
         }
 
     // Paints
@@ -64,10 +63,14 @@ class BubbleGridView @JvmOverloads constructor(
     // Callbacks
     var onAllPoppedListener: (() -> Unit)? = null
     var onPopListener: ((poppedCount: Int, total: Int) -> Unit)? = null
+    /** Fired whenever the grid is (re)built, e.g. after first layout or a size change. */
+    var onGridChangedListener: ((total: Int) -> Unit)? = null
+
+    private val allPoppedRunnable = Runnable { onAllPoppedListener?.invoke() }
 
     // Haptic
     @Suppress("DEPRECATION")
-    private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
 
     // Sound
     var soundManager: SoundManager? = null
@@ -88,6 +91,7 @@ class BubbleGridView @JvmOverloads constructor(
     }
 
     fun reset() {
+        removeCallbacks(allPoppedRunnable)
         animators.values.forEach { it.cancel() }
         animators.clear()
         bubbles.forEach { it.isPopped = false; it.animScale = 1f }
@@ -115,6 +119,7 @@ class BubbleGridView @JvmOverloads constructor(
     private fun initBubbles() {
         if (width == 0 || height == 0) return
 
+        removeCallbacks(allPoppedRunnable)
         animators.values.forEach { it.cancel() }
         animators.clear()
         bubbles.clear()
@@ -145,6 +150,24 @@ class BubbleGridView @JvmOverloads constructor(
         }
 
         prepareShaders(radius)
+        invalidate()
+        onGridChangedListener?.invoke(bubbles.size)
+    }
+
+    override fun onDetachedFromWindow() {
+        removeCallbacks(allPoppedRunnable)
+        animators.values.forEach { it.cancel() }
+        animators.clear()
+        super.onDetachedFromWindow()
+    }
+
+    /** Applies the current theme's colours in place, keeping popped state and animations. */
+    private fun recolorBubbles() {
+        if (bubbles.isEmpty()) return  // not laid out yet; initBubbles() will colour them
+        val colorList = currentThemeEnum.colors
+        bubbles.forEachIndexed { i, b -> b.color = colorList[i % colorList.size] }
+        clearShaderCaches()
+        prepareShaders(bubbles[0].radius)
         invalidate()
     }
 
@@ -275,6 +298,7 @@ class BubbleGridView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN,
+            MotionEvent.ACTION_POINTER_DOWN,
             MotionEvent.ACTION_MOVE -> {
                 for (pIdx in 0 until event.pointerCount) {
                     checkTouchAt(event.getX(pIdx), event.getY(pIdx))
@@ -316,13 +340,14 @@ class BubbleGridView @JvmOverloads constructor(
 
         onPopListener?.invoke(getPoppedCount(), bubbles.size)
         if (getPoppedCount() == bubbles.size) {
-            postDelayed({ onAllPoppedListener?.invoke() }, 400)
+            postDelayed(allPoppedRunnable, 400)
         }
     }
 
     @Suppress("DEPRECATION")
     private fun vibrate() {
         try {
+            val vibrator = vibrator ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(VibrationEffect.createOneShot(25, 180))
             } else {

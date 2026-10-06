@@ -5,6 +5,8 @@ import android.media.AudioAttributes
 import android.media.SoundPool
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
@@ -14,7 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.*
 import kotlin.random.Random
 
-class SoundManager(private val context: Context) {
+class SoundManager(context: Context) {
+
+    // Application context: the background load must not keep the Activity alive.
+    private val appContext = context.applicationContext
 
     private val soundPool: SoundPool
     private val popSoundIds = mutableListOf<Int>()
@@ -22,7 +27,11 @@ class SoundManager(private val context: Context) {
     // read from playPop() on the UI thread — must be thread-safe.
     private val loadedSounds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
     private val currentIndex = AtomicInteger(0)
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Guards soundPool against load() on the IO thread racing release() on the UI thread.
+    private val poolLock = Any()
+    private var released = false
 
     init {
         val attrs = AudioAttributes.Builder()
@@ -48,8 +57,9 @@ class SoundManager(private val context: Context) {
     }
 
     private fun loadOrGenerateSound(variation: Int) {
-        val file = File(context.cacheDir, "pop_$variation.wav")
-        
+        // Bump SYNTH_VERSION whenever the synthesis below changes so cached files are regenerated.
+        val file = File(appContext.cacheDir, "pop_v${SYNTH_VERSION}_$variation.wav")
+
         if (!file.exists()) {
             val sampleRate = 22050
             val durationSec = 0.13
@@ -79,11 +89,20 @@ class SoundManager(private val context: Context) {
                 pcm[i] = sample.toShort()
             }
 
-            val wavBytes = buildWavFile(pcm, sampleRate)
-            file.writeBytes(wavBytes)
+            // Write to a temp file and rename, so a process killed mid-write
+            // can't leave a truncated WAV that looks valid on the next launch.
+            val tmp = File(file.parentFile, file.name + ".tmp")
+            tmp.writeBytes(buildWavFile(pcm, sampleRate))
+            if (!tmp.renameTo(file)) {
+                tmp.delete()
+                return
+            }
         }
 
-        val id = soundPool.load(file.absolutePath, 1)
+        val id = synchronized(poolLock) {
+            if (released) return
+            soundPool.load(file.absolutePath, 1)
+        }
         if (id > 0) {
             synchronized(popSoundIds) {
                 popSoundIds.add(id)
@@ -138,11 +157,21 @@ class SoundManager(private val context: Context) {
         if (id in loadedSounds) {
             val pitch = 0.85f + Random.nextFloat() * 0.3f
             val vol = 0.8f + Random.nextFloat() * 0.2f
-            soundPool.play(id, vol, vol, 1, 0, pitch)
+            synchronized(poolLock) {
+                if (!released) soundPool.play(id, vol, vol, 1, 0, pitch)
+            }
         }
     }
 
     fun release() {
-        soundPool.release()
+        scope.cancel()
+        synchronized(poolLock) {
+            released = true
+            soundPool.release()
+        }
+    }
+
+    private companion object {
+        const val SYNTH_VERSION = 1
     }
 }

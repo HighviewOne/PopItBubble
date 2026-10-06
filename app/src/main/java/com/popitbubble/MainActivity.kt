@@ -12,6 +12,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.animation.BounceInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.popitbubble.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -22,12 +24,15 @@ class MainActivity : AppCompatActivity() {
     // Challenge mode
     private var challengeMode = false
     private var challengeStarted = false
-    private var celebrationRunnable: Runnable? = null
+    private var finalElapsedMs = 0L
+    private var celebrationAnim: AnimatorSet? = null
+    private val celebrationResetRunnable = Runnable { resetGame() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applySystemBarInsets(binding.root)
 
         setSupportActionBar(binding.toolbar)
 
@@ -35,6 +40,12 @@ class MainActivity : AppCompatActivity() {
 
         soundManager = SoundManager(this)
         binding.bubbleGridView.soundManager = soundManager
+
+        // The grid is only built once the view has been measured, so the
+        // counter total is set from this callback rather than in onCreate.
+        binding.bubbleGridView.onGridChangedListener = { total ->
+            updateCounter(binding.bubbleGridView.getPoppedCount(), total)
+        }
 
         // Restore saved grid size and theme
         binding.bubbleGridView.setGridSize(Prefs.gridSize, Prefs.gridSize)
@@ -47,14 +58,18 @@ class MainActivity : AppCompatActivity() {
                 binding.chronometer.base = SystemClock.elapsedRealtime()
                 binding.chronometer.start()
             }
+            // Stop the clock on the last pop itself, not when the delayed
+            // celebration callback fires.
+            if (challengeMode && challengeStarted && popped == total) {
+                binding.chronometer.stop()
+                finalElapsedMs = SystemClock.elapsedRealtime() - binding.chronometer.base
+            }
         }
 
         binding.bubbleGridView.onAllPoppedListener = {
             if (challengeMode && challengeStarted) {
-                binding.chronometer.stop()
-                val elapsed = SystemClock.elapsedRealtime() - binding.chronometer.base
-                checkBestTime(elapsed)
-                showAllPoppedCelebration(formatTime(elapsed))
+                checkBestTime(finalElapsedMs)
+                showAllPoppedCelebration(formatTime(finalElapsedMs))
             } else {
                 showAllPoppedCelebration(null)
             }
@@ -62,20 +77,34 @@ class MainActivity : AppCompatActivity() {
 
         binding.fabReset.setOnClickListener { resetGame() }
 
-        updateCounter(0, binding.bubbleGridView.getTotalCount())
         updateBestTimeLabel()
+    }
+
+    /**
+     * Pads the root by the system bar insets. With targetSdk 35, Android 15
+     * draws apps edge-to-edge, so without this the toolbar sits under the
+     * status bar and the FAB under the navigation bar.
+     */
+    private fun applySystemBarInsets(root: View) {
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean("challengeMode", challengeMode)
-        outState.putBoolean("challengeStarted", challengeStarted)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
+        // The grid and chronometer always start fresh after recreation, so
+        // only the mode is restored; a run in progress is not.
         challengeMode = savedInstanceState.getBoolean("challengeMode", false)
-        challengeStarted = savedInstanceState.getBoolean("challengeStarted", false)
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
     }
 
@@ -123,20 +152,26 @@ class MainActivity : AppCompatActivity() {
         scaleX.interpolator = BounceInterpolator()
         scaleY.interpolator = BounceInterpolator()
 
-        AnimatorSet().apply {
+        celebrationAnim = AnimatorSet().apply {
             playTogether(fadeIn, scaleX, scaleY)
             duration = 600
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    celebrationRunnable = Runnable { resetGame() }
-                    binding.tvAllPopped.postDelayed(celebrationRunnable!!, 1500)
+                    binding.tvAllPopped.postDelayed(celebrationResetRunnable, 1500)
                 }
             })
             start()
         }
     }
 
+    private fun cancelCelebration() {
+        celebrationAnim?.run { removeAllListeners(); cancel() }
+        celebrationAnim = null
+        binding.tvAllPopped.removeCallbacks(celebrationResetRunnable)
+    }
+
     private fun resetGame() {
+        cancelCelebration()
         binding.tvAllPopped.visibility = View.GONE
         binding.chronometer.stop()
         binding.chronometer.base = SystemClock.elapsedRealtime()
@@ -146,14 +181,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setGridSize(size: Int) {
+        // A new grid is a new game: also resets the challenge clock.
+        resetGame()
         binding.bubbleGridView.setGridSize(size, size)
-        updateCounter(0, binding.bubbleGridView.getTotalCount())
         Prefs.gridSize = size
         Prefs.save(this)
     }
 
-    private fun setTheme(name: String) {
+    private fun applyColorTheme(name: String) {
+        // Recolouring keeps popped bubbles, so the run (and clock) carry on.
         binding.bubbleGridView.currentTheme = name
+        updateCounter(binding.bubbleGridView.getPoppedCount(), binding.bubbleGridView.getTotalCount())
         Prefs.colorTheme = name
         Prefs.save(this)
     }
@@ -172,19 +210,19 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_5x5 -> { setGridSize(5); true }
             R.id.menu_6x6 -> { setGridSize(6); true }
             R.id.menu_7x7 -> { setGridSize(7); true }
-            R.id.menu_theme_rainbow -> { setTheme("rainbow"); true }
-            R.id.menu_theme_pink   -> { setTheme("pink");    true }
-            R.id.menu_theme_blue   -> { setTheme("blue");    true }
-            R.id.menu_theme_pastel -> { setTheme("pastel");  true }
-            R.id.menu_theme_neon   -> { setTheme("neon");    true }
-            R.id.menu_theme_candy  -> { setTheme("candy");   true }
+            R.id.menu_theme_rainbow -> { applyColorTheme("rainbow"); true }
+            R.id.menu_theme_pink   -> { applyColorTheme("pink");    true }
+            R.id.menu_theme_blue   -> { applyColorTheme("blue");    true }
+            R.id.menu_theme_pastel -> { applyColorTheme("pastel");  true }
+            R.id.menu_theme_neon   -> { applyColorTheme("neon");    true }
+            R.id.menu_theme_candy  -> { applyColorTheme("candy");   true }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        celebrationRunnable?.let { binding.tvAllPopped.removeCallbacks(it) }
+        cancelCelebration()
         soundManager.release()
     }
 }
