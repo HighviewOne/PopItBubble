@@ -62,7 +62,7 @@ New in v1.3.0:
 - 🐛 **Game fixes** — correct pop counter on launch, Challenge Mode times no longer include the celebration delay, theme and grid changes no longer desync the counter or clock
 - 📱 **Android 15 ready** — content stays clear of the status and navigation bars under enforced edge-to-edge
 - ⚡ **Smoother rendering** — bubbles are pre-rendered sprites drawn with hardware acceleration
-- 📦 **Smaller release APK** — R8 shrinking cuts it from ~5.9 MB to ~1.5 MB
+- 📦 **Smaller release APK** — R8 shrinking cuts it from ~5.9 MB to under 2 MB (~1.2 MB as of v1.3.1)
 - 🧪 **Espresso tests in CI** on an emulator, alongside unit tests and lint
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
@@ -179,7 +179,7 @@ PopItBubble/
 ## Release signing
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. The tag must match
-`versionName` in `app/build.gradle` (e.g. `v1.2.0`). To publish a release-signed,
+`versionName` in `app/build.gradle` (e.g. `v1.3.1`). To publish a release-signed,
 R8-shrunk APK, add these repository secrets:
 
 | Secret | Value |
@@ -190,8 +190,23 @@ R8-shrunk APK, add these repository secrets:
 | `KEY_PASSWORD` | key password |
 
 Without them the workflow publishes a debug-signed APK and logs a warning.
-For local signed builds, put `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
-`KEY_PASSWORD` in a gitignored `keystore.properties` at the repo root.
+
+For local signed builds, create a gitignored `keystore.properties` at the repo root.
+Run these as two separate steps; pasting them together makes `read` take the next
+pasted line as the password:
+
+```bash
+read -rsp "Keystore password: " PW; echo
+```
+
+```bash
+printf 'KEYSTORE_FILE=%s\nKEYSTORE_PASSWORD=%s\nKEY_ALIAS=popitbubble\nKEY_PASSWORD=%s\n' "/path/to/release.jks" "$PW" "$PW" > keystore.properties && chmod 600 keystore.properties && unset PW
+```
+
+Environment variables with the same names take precedence over the file. If the password
+contains a backslash, double it in the file (properties-file escaping). Back up the keystore
+and its password somewhere off the build machine: losing either means future APKs can't
+install as updates.
 
 ---
 
