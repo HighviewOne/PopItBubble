@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.3.0
+
+> **Upgrading from an earlier release APK:** releases are now signed with a
+> release key instead of the debug key. Uninstall the old version once before
+> installing 1.3.0; later updates install normally.
 
 ### Fixed
 - Pop counter showed "0 / 0" until the first pop.
@@ -20,6 +24,7 @@
 - Bubbles are rendered from cached sprites with hardware acceleration instead of a software layer.
 - Release builds use R8 with resource shrinking (~5.9 MB → ~1.5 MB).
 - Toolchain: AGP 8.13, Kotlin 2.4, Gradle 8.14, Java 17, compileSdk 36.
+- Libraries: core-ktx 1.18, AppCompat 1.8, Material 1.14, ConstraintLayout 2.2, plus newer AndroidX Test.
 - Releases are signed with a release key when signing secrets are configured, and the tag must match `versionName`.
 
 ### Added
