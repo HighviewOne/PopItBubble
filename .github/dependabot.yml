@@ -18,11 +18,6 @@ updates:
         patterns:
           - "org.jetbrains.kotlin*"
           - "org.jetbrains.kotlinx*"
-    ignore:
-      # androidx.core 1.19+ requires compileSdk 37 and AGP 9.1+.
-      # Remove this with the AGP 9 upgrade.
-      - dependency-name: "androidx.core:*"
-        versions: [">= 1.19.0"]
 
   # GitHub Actions workflow versions
   - package-ecosystem: github-actions
