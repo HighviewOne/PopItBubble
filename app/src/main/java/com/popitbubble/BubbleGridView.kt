@@ -16,7 +16,8 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.graphics.createBitmap
 import kotlin.math.roundToInt
 
-data class Bubble(
+/** One cell of the grid; mutable state, so a plain class rather than a data class. */
+class Bubble(
     val row: Int,
     val col: Int,
     var cx: Float = 0f,
