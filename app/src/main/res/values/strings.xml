@@ -12,6 +12,9 @@
     <string name="all_popped">🎉 All Popped! 🎉</string>
     <string name="all_popped_time_format">🎉 %1$s! 🎉</string>
     <string name="reset_bubbles">Reset bubbles</string>
+    <!-- TalkBack labels for each bubble: %1$d row, %2$d column (1-based). -->
+    <string name="bubble_description">Bubble, row %1$d, column %2$d</string>
+    <string name="bubble_popped_description">Popped bubble, row %1$d, column %2$d</string>
 
     <!-- Menu -->
     <string name="reset">Reset</string>

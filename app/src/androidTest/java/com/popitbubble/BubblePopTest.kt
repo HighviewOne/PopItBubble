@@ -14,6 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.not
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -135,6 +136,22 @@ class BubblePopTest {
                 }
             }
         }
+    }
+
+    // ── Accessibility ─────────────────────────────────────────────────────────
+
+    @Test
+    fun bubbles_are_exposed_to_accessibility_and_poppable() {
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            // Index 7 = row 2, column 3 on the default 5×5 grid.
+            assertEquals("Bubble, row 2, column 3", grid.accessibilityDescriptionForTest(7).toString())
+            assertTrue(grid.accessibilityClickForTest(7))
+            assertEquals("Popped bubble, row 2, column 3", grid.accessibilityDescriptionForTest(7).toString())
+            // A popped bubble no longer offers the click action.
+            assertFalse(grid.accessibilityClickForTest(7))
+        }
+        onView(withId(R.id.tvCounter)).check(matches(withText("1 / 25")))
     }
 
     // ── Theme switching ───────────────────────────────────────────────────────

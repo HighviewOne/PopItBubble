@@ -6,14 +6,20 @@ import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.os.Build
+import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.AttributeSet
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.accessibility.AccessibilityEvent
 import android.view.animation.OvershootInterpolator
 import androidx.annotation.VisibleForTesting
 import androidx.core.graphics.createBitmap
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
+import androidx.customview.widget.ExploreByTouchHelper
 import kotlin.math.roundToInt
 
 /** One cell of the grid; mutable state, so a plain class rather than a data class. */
@@ -104,6 +110,7 @@ class BubbleGridView @JvmOverloads constructor(
         animators.clear()
         bubbles.forEach { it.isPopped = false; it.animScale = 1f }
         invalidate()
+        a11yHelper.invalidateRoot()
     }
 
     fun getPoppedCount() = bubbles.count { it.isPopped }
@@ -159,6 +166,7 @@ class BubbleGridView @JvmOverloads constructor(
 
         prepareRendering(radius)
         invalidate()
+        a11yHelper.invalidateRoot()
         onGridChangedListener?.invoke(bubbles.size)
     }
 
@@ -330,9 +338,13 @@ class BubbleGridView @JvmOverloads constructor(
                     checkTouchAt(event.getX(pIdx), event.getY(pIdx))
                 }
             }
+            // Popping happens on down/move; report the gesture as a click for accessibility services.
+            MotionEvent.ACTION_UP -> performClick()
         }
         return true
     }
+
+    override fun performClick(): Boolean = super.performClick()
 
     private fun checkTouchAt(tx: Float, ty: Float) {
         for ((index, bubble) in bubbles.withIndex()) {
@@ -368,6 +380,7 @@ class BubbleGridView @JvmOverloads constructor(
         }
         animators[index] = anim
         anim.start()
+        a11yHelper.invalidateVirtualView(index)
 
         onPopListener?.invoke(getPoppedCount(), bubbles.size)
         if (getPoppedCount() == bubbles.size) {
@@ -385,5 +398,80 @@ class BubbleGridView @JvmOverloads constructor(
                 vibrator.vibrate(25)
             }
         } catch (_: Exception) { }
+    }
+
+    // ─── Accessibility ────────────────────────────────────────────
+    // The grid is a single View, so each bubble is exposed to TalkBack as a
+    // virtual view: announced by row/column and state, poppable by double-tap.
+
+    private val a11yHelper = BubbleAccessibilityHelper()
+
+    init {
+        ViewCompat.setAccessibilityDelegate(this, a11yHelper)
+    }
+
+    override fun dispatchHoverEvent(event: MotionEvent): Boolean =
+        a11yHelper.dispatchHoverEvent(event) || super.dispatchHoverEvent(event)
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        a11yHelper.dispatchKeyEvent(event) || super.dispatchKeyEvent(event)
+
+    override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+        super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+        a11yHelper.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+    }
+
+    /** Pops bubble [index] through the accessibility click action, as TalkBack would. */
+    @VisibleForTesting
+    internal fun accessibilityClickForTest(index: Int): Boolean =
+        a11yHelper.getAccessibilityNodeProvider(this)
+            ?.performAction(index, AccessibilityNodeInfoCompat.ACTION_CLICK, null) == true
+
+    @VisibleForTesting
+    internal fun accessibilityDescriptionForTest(index: Int): CharSequence? =
+        a11yHelper.getAccessibilityNodeProvider(this)?.createAccessibilityNodeInfo(index)?.contentDescription
+
+    private inner class BubbleAccessibilityHelper : ExploreByTouchHelper(this@BubbleGridView) {
+        private val bounds = Rect()
+
+        override fun getVirtualViewAt(x: Float, y: Float): Int {
+            val index = bubbles.indexOfFirst { GridMath.isTouching(x, y, it.cx, it.cy, it.radius) }
+            return if (index >= 0) index else INVALID_ID
+        }
+
+        override fun getVisibleVirtualViews(virtualViewIds: MutableList<Int>) {
+            virtualViewIds.addAll(bubbles.indices)
+        }
+
+        @Suppress("DEPRECATION") // ExploreByTouchHelper still requires bounds in parent.
+        override fun onPopulateNodeForVirtualView(virtualViewId: Int, node: AccessibilityNodeInfoCompat) {
+            val b = bubbles.getOrNull(virtualViewId)
+            if (b == null) {
+                // Stale id after the grid shrank: report an empty node.
+                node.contentDescription = ""
+                bounds.set(0, 0, 1, 1)
+                node.setBoundsInParent(bounds)
+                return
+            }
+            node.contentDescription = context.getString(
+                if (b.isPopped) R.string.bubble_popped_description else R.string.bubble_description,
+                b.row + 1, b.col + 1
+            )
+            bounds.set(
+                (b.cx - b.radius).toInt(), (b.cy - b.radius).toInt(),
+                (b.cx + b.radius).toInt(), (b.cy + b.radius).toInt()
+            )
+            node.setBoundsInParent(bounds)
+            if (!b.isPopped) node.addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK)
+        }
+
+        override fun onPerformActionForVirtualView(virtualViewId: Int, action: Int, arguments: Bundle?): Boolean {
+            if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) return false
+            val b = bubbles.getOrNull(virtualViewId) ?: return false
+            if (b.isPopped) return false
+            popBubble(virtualViewId)
+            sendEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED)
+            return true
+        }
     }
 }
