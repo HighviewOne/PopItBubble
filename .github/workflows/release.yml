@@ -30,7 +30,7 @@ jobs:
 
       - name: Check tag matches versionName
         run: |
-          version=$(sed -nE 's/^[[:space:]]*versionName "([^"]+)".*/\1/p' app/build.gradle)
+          version=$(sed -nE 's/^[[:space:]]*versionName( =)? "([^"]+)".*/\2/p' app/build.gradle)
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match versionName $version in app/build.gradle"
             exit 1

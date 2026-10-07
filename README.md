@@ -72,9 +72,9 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 ## How to Build
 
 ### Requirements
-- Android Studio **Narwhal 3 Feature Drop (2025.1.3)** or newer (for AGP 8.13)
+- An Android Studio release that supports **AGP 9.4** (see the [compatibility table](https://developer.android.com/build/releases/gradle-plugin))
 - JDK 17
-- Android SDK with the **API level 36** platform (compileSdk 36, targetSdk 35)
+- Android SDK with the **API level 37** platform (compileSdk 37, targetSdk 35)
 
 ### Steps
 
@@ -163,7 +163,7 @@ PopItBubble/
 | **Per-frame work** | Background gradient plus one bitmap blit per bubble (at most 49), hardware-accelerated |
 | **Sprite cache** | Up to 12 bitmaps (inflated + popped for each theme colour), rebuilt only when the grid size or theme changes — about 2–3 MB |
 | **Pop animation** | 220 ms `OvershootInterpolator` spring, Choreographer-driven |
-| **APK size** | ~1.5 MB release (R8 + resource shrinking), ~5.9 MB debug — no bundled audio, sounds are generated on first launch and cached |
+| **APK size** | ~1.2 MB release (R8 + resource shrinking), ~7 MB debug — no bundled audio, sounds are generated on first launch and cached |
 
 ---
 
