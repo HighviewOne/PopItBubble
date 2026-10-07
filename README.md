@@ -42,28 +42,31 @@
 | 🎉 **Celebration** | Animated overlay + auto-reset when all bubbles are popped |
 | 📊 **Pop Counter** | Live `X / Total` count in the header bar |
 | ⚙️ **Settings** | Toggle sound and haptic feedback independently |
-| ⏱️ **Challenge Mode** | Race the clock — timer starts on first pop, tracks personal best |
+| ⏱️ **Challenge Mode** | Race the clock — timer starts on first pop, keeps a personal best for each grid size |
+| ♿ **Screen Reader Support** | TalkBack announces each bubble by row, column and state; double-tap to pop |
 
 ### How Challenge Mode works
 
-1. Tap **⋮ → ⏱ Challenge Mode** to toggle it on. A timer bar appears below the pop counter.
+1. Tap **⋮ → ⏱ Challenge Mode** to toggle it on (the menu item shows a checkmark). A timer bar appears below the pop counter.
 2. The clock **doesn't start** until you pop your first bubble — no penalty for switching the menu or thinking.
 3. Pop all bubbles as fast as you can. The clock stops the moment the last bubble pops.
 4. Your time is shown in the celebration overlay (e.g. `🎉 4.2s! 🎉`).
-5. If it's your fastest run, it's saved as your **personal best** and displayed next to the timer on every future run.
-6. Tap ↺ (FAB or menu) to reset and try again. Best time persists across sessions.
+5. If it's your fastest run on that grid size, it's saved as your **personal best** and shown next to the timer. Each grid size keeps its own record.
+6. Tap ↺ (FAB or menu) to reset and try again. Best times persist across sessions.
 
 ---
 
 ## What's New
 
-New in v1.3.0:
+New in v1.4.0:
 
-- 🐛 **Game fixes** — correct pop counter on launch, Challenge Mode times no longer include the celebration delay, theme and grid changes no longer desync the counter or clock
-- 📱 **Android 15 ready** — content stays clear of the status and navigation bars under enforced edge-to-edge
-- ⚡ **Smoother rendering** — bubbles are pre-rendered sprites drawn with hardware acceleration
-- 📦 **Smaller release APK** — R8 shrinking cuts it from ~5.9 MB to under 2 MB (~1.2 MB as of v1.3.1)
-- 🧪 **Espresso tests in CI** on an emulator, alongside unit tests and lint
+- ⏱️ **A best time per grid size** — 4×4 and 7×7 runs no longer compete for one record; an existing best time carries over to the grid size you last played
+- ♿ **TalkBack support** — every bubble is announced by row, column and whether it's popped, and can be popped with a double-tap
+- 🎨 **Adaptive launcher icon** — fits every launcher shape on Android 8+, with a themed (monochrome) icon on Android 13+
+- ✅ **Challenge Mode checkmark** in the menu shows whether it's on
+- 🌍 **Translatable** — all on-screen text now lives in `strings.xml`
+
+Earlier in v1.3.0: game-state fixes, Android 15 edge-to-edge support, sprite rendering, a release-signed ~1.2 MB APK and Espresso tests in CI.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
@@ -125,7 +128,8 @@ PopItBubble/
 │   ├── test/java/com/popitbubble/
 │   │   └── GridMathTest.kt       # JVM unit tests (no Android required)
 │   └── androidTest/java/com/popitbubble/
-│       └── BubblePopTest.kt      # Espresso UI tests
+│       ├── BubblePopTest.kt      # Espresso UI tests
+│       └── PrefsTest.kt          # Settings storage and best-time migration
 ├── docs/                         # GitHub Pages landing page + assets
 └── tools/                        # Python scripts that generate docs/assets images
 ```
@@ -151,8 +155,9 @@ PopItBubble/
 | **Haptics** | `VibrationEffect.createOneShot` on API 26+, with a fallback for older devices |
 | **Animation** | `ValueAnimator` with `OvershootInterpolator` gives the characteristic "squish-and-spring" pop feel |
 | **Edge-to-edge** | Window insets are applied to each screen, as required on Android 15 at targetSdk 35 |
+| **Accessibility** | An `ExploreByTouchHelper` exposes each bubble as a virtual view with a label, bounds and a click action, so TalkBack can explore and pop the single-View grid |
 | **Testability** | Geometry lives in `GridMath` — pure Kotlin, no Android deps, runs on the JVM in milliseconds |
-| **UI tests** | Espresso tests cover the counter, popping, reset, Challenge Mode, theme switching and sprite rendering; CI runs them on an emulator |
+| **UI tests** | Espresso tests cover the counter, popping, reset, Challenge Mode and per-size best times, theme switching, sprite rendering and accessibility; CI runs them on an emulator |
 
 ---
 
@@ -172,7 +177,7 @@ PopItBubble/
 - [ ] Haptic strength slider
 - [ ] High-score leaderboard
 - [ ] Hexagonal grid layout
-- [ ] Accessibility: screen reader support
+- [x] Accessibility: screen reader support (v1.4.0)
 
 ---
 
