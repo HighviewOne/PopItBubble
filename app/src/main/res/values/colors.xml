@@ -7,4 +7,5 @@
     <color name="text_secondary">#B0B8CC</color>
     <color name="accent_pink">#FF6B9D</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#1A1A2E</color>
 </resources>
