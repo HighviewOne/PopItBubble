@@ -202,7 +202,7 @@ Grab the latest APK from [Releases](https://github.com/HighviewOne/PopItBubble/r
 > Enable **Install from unknown sources** in Android Settings → Apps before installing.
 
 > Upgrading from v1.2.0 or earlier? Those APKs were debug-signed; uninstall the
-> old version once before installing v1.3.0. Later updates install normally.
+> old version once before installing v1.3.0 or later. Later updates install normally.
 
 ---
 

@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.3.1
+
+Maintenance release: no gameplay changes.
 
 ### Changed
 - Toolchain: AGP 9.4.1 with built-in Kotlin (the `kotlin-android` plugin is no longer applied), Gradle 9.8.0, compileSdk 37.
-- core-ktx 1.19.1 (needed compileSdk 37 and AGP 9.1+).
+- core-ktx 1.19.1 (needed compileSdk 37 and AGP 9.1+); kotlinx-coroutines 1.11.0.
 - Release APK is ~1.2 MB (was ~1.7 MB in 1.3.0).
 
 ## 1.3.0
