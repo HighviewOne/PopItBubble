@@ -278,6 +278,8 @@
       font-size: .9rem;
       font-weight: 600;
       letter-spacing: .02em;
+      /* Keeps white labels readable on the light parts of the gradients. */
+      text-shadow: 0 1px 2px rgba(0,0,0,.55);
     }
 
     /* ── Download section ── */
@@ -380,8 +382,8 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">🎨</div>
-        <h3>4 Color Themes</h3>
-        <p>Switch between Rainbow, Pink, Blue, and Pastel palettes to match your mood.</p>
+        <h3>6 Color Themes</h3>
+        <p>Switch between Rainbow, Pink, Blue, Pastel, Neon, and Candy palettes to match your mood.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📐</div>
@@ -408,6 +410,16 @@
         <h3>Auto-Reset</h3>
         <p>Pop every bubble and watch the celebration, then it automatically refills for another round.</p>
       </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏱️</div>
+        <h3>Challenge Mode</h3>
+        <p>Race the clock from your first pop to your last, with a personal best kept for every grid size.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">♿</div>
+        <h3>Screen Reader Support</h3>
+        <p>TalkBack announces each bubble by row, column, and whether it's popped. Double-tap to pop.</p>
+      </div>
     </div>
 
     <!-- Themes chips -->
@@ -418,6 +430,8 @@
         <span class="theme-chip" style="background:linear-gradient(135deg,#FFB3D1,#FF4D94);">🌸 Pink</span>
         <span class="theme-chip" style="background:linear-gradient(135deg,#B3D9FF,#0066CC);">💙 Blue</span>
         <span class="theme-chip" style="background:linear-gradient(135deg,#FFD1DC,#E8D1FF,#D1F0FF);">🎀 Pastel</span>
+        <span class="theme-chip" style="background:linear-gradient(135deg,#FF00FF,#00FFFF,#00FF41,#FFFF00);">⚡ Neon</span>
+        <span class="theme-chip" style="background:linear-gradient(135deg,#FF6EB4,#FF9A3C,#FFE44D,#5CC8FF,#C87CFF);">🍬 Candy</span>
       </div>
     </div>
   </section>
@@ -435,7 +449,8 @@
       </a>
       <p class="download-note">
         Enable <strong>Install from unknown sources</strong> in Android settings before installing.<br>
-        Requires Android 7.0 (Nougat) or higher.
+        Requires Android 7.0 (Nougat) or higher.<br>
+        Upgrading from v1.2.0 or earlier? Uninstall the old version once first; later updates install normally.
       </p>
     </div>
   </section>
