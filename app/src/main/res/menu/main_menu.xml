@@ -23,6 +23,7 @@
     <item
         android:id="@+id/menu_challenge"
         android:title="@string/challenge_mode"
+        android:checkable="true"
         app:showAsAction="never"/>
 
     <item

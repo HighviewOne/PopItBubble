@@ -102,6 +102,16 @@ class BubblePopTest {
         onView(withId(R.id.challengeBar)).check(matches(isDisplayed()))
     }
 
+    @Test
+    fun challenge_menu_item_shows_checked_state() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        scenario.onActivity { activity ->
+            assertTrue(activity.isChallengeMenuCheckedForTest())
+        }
+    }
+
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     @Test

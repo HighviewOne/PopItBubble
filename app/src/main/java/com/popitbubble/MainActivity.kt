@@ -11,6 +11,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.BounceInterpolator
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private var finalElapsedMs = 0L
     private var celebrationAnim: AnimatorSet? = null
     private val celebrationResetRunnable = Runnable { resetGame() }
+    private var optionsMenu: Menu? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,6 +109,7 @@ class MainActivity : AppCompatActivity() {
         // only the mode is restored; a run in progress is not.
         challengeMode = savedInstanceState.getBoolean("challengeMode", false)
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
+        invalidateOptionsMenu()
     }
 
     private fun updateCounter(popped: Int, total: Int) {
@@ -117,6 +120,7 @@ class MainActivity : AppCompatActivity() {
         challengeMode = !challengeMode
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
         if (!challengeMode) binding.chronometer.stop()
+        invalidateOptionsMenu()
         resetGame()
     }
 
@@ -198,7 +202,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        optionsMenu = menu
         return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.menu_challenge)?.isChecked = challengeMode
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -219,6 +229,10 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+    @VisibleForTesting
+    internal fun isChallengeMenuCheckedForTest(): Boolean =
+        optionsMenu?.findItem(R.id.menu_challenge)?.isChecked == true
 
     override fun onDestroy() {
         super.onDestroy()
