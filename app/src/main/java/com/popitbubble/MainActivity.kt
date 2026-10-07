@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateCounter(popped: Int, total: Int) {
-        binding.tvCounter.text = "$popped / $total"
+        binding.tvCounter.text = getString(R.string.counter_format, popped, total)
     }
 
     private fun toggleChallengeMode() {
@@ -130,17 +130,18 @@ class MainActivity : AppCompatActivity() {
     /** Shows the best time for the current grid size; each size keeps its own record. */
     private fun updateBestTimeLabel() {
         val best = Prefs.bestTimeMs(Prefs.gridSize)
-        binding.tvBestTime.text = if (best > 0L) "Best: ${formatTime(best)}" else ""
+        binding.tvBestTime.text = if (best > 0L) getString(R.string.best_time_format, formatTime(best)) else ""
     }
 
     private fun formatTime(ms: Long): String {
         val s = ms / 1000
         val tenths = (ms % 1000) / 100
-        return "%d.%ds".format(s, tenths)
+        return getString(R.string.time_seconds_format, s, tenths)
     }
 
     private fun showAllPoppedCelebration(timeStr: String?) {
-        binding.tvAllPopped.text = if (timeStr != null) "🎉 ${timeStr}! 🎉" else "🎉 All Popped! 🎉"
+        binding.tvAllPopped.text = if (timeStr != null) getString(R.string.all_popped_time_format, timeStr)
+            else getString(R.string.all_popped)
         binding.tvAllPopped.visibility = View.VISIBLE
         binding.tvAllPopped.alpha  = 0f
         binding.tvAllPopped.scaleX = 0.5f

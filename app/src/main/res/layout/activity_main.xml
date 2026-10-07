@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
@@ -34,7 +35,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Popped: "
+            android:text="@string/popped_label"
             android:textColor="@color/text_secondary"
             android:textSize="15sp"
             android:fontFamily="sans-serif-medium"/>
@@ -43,7 +44,7 @@
             android:id="@+id/tvCounter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0 / 25"
+            tools:text="0 / 25"
             android:textColor="@color/accent_pink"
             android:textSize="15sp"
             android:fontFamily="sans-serif-bold"/>
@@ -65,7 +66,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⏱  "
+            android:text="@string/timer_icon"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"/>
 
@@ -102,7 +103,7 @@
         android:id="@+id/tvAllPopped"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🎉 All Popped! 🎉"
+        android:text="@string/all_popped"
         android:textSize="32sp"
         android:textColor="#FFFFFF"
         android:fontFamily="sans-serif-black"
@@ -121,7 +122,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
-        android:contentDescription="Reset bubbles"
+        android:contentDescription="@string/reset_bubbles"
         app:srcCompat="@drawable/ic_refresh"
         app:backgroundTint="@color/accent_pink"
         app:tint="#FFFFFF"

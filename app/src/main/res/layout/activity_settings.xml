@@ -25,7 +25,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🔊  Pop sounds"
+            android:text="@string/pref_pop_sounds"
             android:textColor="@color/text_primary"
             android:textSize="16sp"/>
 
@@ -51,7 +51,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="📳  Haptic feedback"
+            android:text="@string/pref_haptics"
             android:textColor="@color/text_primary"
             android:textSize="16sp"/>
 

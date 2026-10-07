@@ -13,21 +13,21 @@
         android:title="@string/grid_size"
         app:showAsAction="never">
         <menu>
-            <item android:id="@+id/menu_4x4" android:title="4 × 4  (16 bubbles)"/>
-            <item android:id="@+id/menu_5x5" android:title="5 × 5  (25 bubbles)"/>
-            <item android:id="@+id/menu_6x6" android:title="6 × 6  (36 bubbles)"/>
-            <item android:id="@+id/menu_7x7" android:title="7 × 7  (49 bubbles)"/>
+            <item android:id="@+id/menu_4x4" android:title="@string/grid_4x4"/>
+            <item android:id="@+id/menu_5x5" android:title="@string/grid_5x5"/>
+            <item android:id="@+id/menu_6x6" android:title="@string/grid_6x6"/>
+            <item android:id="@+id/menu_7x7" android:title="@string/grid_7x7"/>
         </menu>
     </item>
 
     <item
         android:id="@+id/menu_challenge"
-        android:title="⏱  Challenge Mode"
+        android:title="@string/challenge_mode"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/menu_settings"
-        android:title="Settings"
+        android:title="@string/settings"
         app:showAsAction="never"/>
 
     <item
@@ -35,12 +35,12 @@
         android:title="@string/color_theme"
         app:showAsAction="never">
         <menu>
-            <item android:id="@+id/menu_theme_rainbow" android:title="🌈 Rainbow"/>
-            <item android:id="@+id/menu_theme_pink"    android:title="🌸 Pink"/>
-            <item android:id="@+id/menu_theme_blue"    android:title="💙 Blue"/>
-            <item android:id="@+id/menu_theme_pastel"  android:title="🎀 Pastel"/>
-            <item android:id="@+id/menu_theme_neon"    android:title="⚡ Neon"/>
-            <item android:id="@+id/menu_theme_candy"   android:title="🍬 Candy"/>
+            <item android:id="@+id/menu_theme_rainbow" android:title="@string/theme_rainbow"/>
+            <item android:id="@+id/menu_theme_pink"    android:title="@string/theme_pink"/>
+            <item android:id="@+id/menu_theme_blue"    android:title="@string/theme_blue"/>
+            <item android:id="@+id/menu_theme_pastel"  android:title="@string/theme_pastel"/>
+            <item android:id="@+id/menu_theme_neon"    android:title="@string/theme_neon"/>
+            <item android:id="@+id/menu_theme_candy"   android:title="@string/theme_candy"/>
         </menu>
     </item>
 
