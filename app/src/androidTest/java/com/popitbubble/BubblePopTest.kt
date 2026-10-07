@@ -138,6 +138,25 @@ class BubblePopTest {
         }
     }
 
+    @Test
+    fun best_time_label_follows_the_grid_size() {
+        // Relaunch with a 4×4 record only.
+        scenario.close()
+        Prefs.init(InstrumentationRegistry.getInstrumentation().targetContext)
+        Prefs.setBestTimeMs(4, 3_200L)
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        onView(withId(R.id.tvBestTime)).check(matches(withText("")))   // 5×5: no record
+
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("Grid Size")).perform(click())
+        onView(withText("4 × 4  (16 bubbles)")).perform(click())
+        onView(withId(R.id.tvBestTime)).check(matches(withText("Best: 3.2s")))
+    }
+
     // ── Accessibility ─────────────────────────────────────────────────────────
 
     @Test
