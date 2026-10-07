@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        Prefs.load(this)
+        Prefs.init(this)
 
         soundManager = SoundManager(this)
         binding.bubbleGridView.soundManager = soundManager
@@ -45,11 +45,12 @@ class MainActivity : AppCompatActivity() {
         // counter total is set from this callback rather than in onCreate.
         binding.bubbleGridView.onGridChangedListener = { total ->
             updateCounter(binding.bubbleGridView.getPoppedCount(), total)
+            updateBestTimeLabel()
         }
 
         // Restore saved grid size and theme
         binding.bubbleGridView.setGridSize(Prefs.gridSize, Prefs.gridSize)
-        binding.bubbleGridView.currentTheme = Prefs.colorTheme
+        binding.bubbleGridView.theme = Prefs.colorTheme
 
         binding.bubbleGridView.onPopListener = { popped, total ->
             updateCounter(popped, total)
@@ -120,16 +121,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkBestTime(elapsedMs: Long) {
-        val best = Prefs.bestTimeMs
-        if (best == 0L || elapsedMs < best) {
-            Prefs.bestTimeMs = elapsedMs
-            Prefs.save(this)
-        }
+        val size = Prefs.gridSize
+        val best = Prefs.bestTimeMs(size)
+        if (best == 0L || elapsedMs < best) Prefs.setBestTimeMs(size, elapsedMs)
         updateBestTimeLabel()
     }
 
+    /** Shows the best time for the current grid size; each size keeps its own record. */
     private fun updateBestTimeLabel() {
-        val best = Prefs.bestTimeMs
+        val best = Prefs.bestTimeMs(Prefs.gridSize)
         binding.tvBestTime.text = if (best > 0L) "Best: ${formatTime(best)}" else ""
     }
 
@@ -183,17 +183,16 @@ class MainActivity : AppCompatActivity() {
     private fun setGridSize(size: Int) {
         // A new grid is a new game: also resets the challenge clock.
         resetGame()
-        binding.bubbleGridView.setGridSize(size, size)
+        // Saved before the grid rebuilds so onGridChangedListener shows this size's best time.
         Prefs.gridSize = size
-        Prefs.save(this)
+        binding.bubbleGridView.setGridSize(size, size)
     }
 
-    private fun applyColorTheme(name: String) {
+    private fun applyColorTheme(theme: Theme) {
         // Recolouring keeps popped bubbles, so the run (and clock) carry on.
-        binding.bubbleGridView.currentTheme = name
+        binding.bubbleGridView.theme = theme
         updateCounter(binding.bubbleGridView.getPoppedCount(), binding.bubbleGridView.getTotalCount())
-        Prefs.colorTheme = name
-        Prefs.save(this)
+        Prefs.colorTheme = theme
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -210,12 +209,12 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_5x5 -> { setGridSize(5); true }
             R.id.menu_6x6 -> { setGridSize(6); true }
             R.id.menu_7x7 -> { setGridSize(7); true }
-            R.id.menu_theme_rainbow -> { applyColorTheme("rainbow"); true }
-            R.id.menu_theme_pink   -> { applyColorTheme("pink");    true }
-            R.id.menu_theme_blue   -> { applyColorTheme("blue");    true }
-            R.id.menu_theme_pastel -> { applyColorTheme("pastel");  true }
-            R.id.menu_theme_neon   -> { applyColorTheme("neon");    true }
-            R.id.menu_theme_candy  -> { applyColorTheme("candy");   true }
+            R.id.menu_theme_rainbow -> { applyColorTheme(Theme.RAINBOW); true }
+            R.id.menu_theme_pink    -> { applyColorTheme(Theme.PINK);    true }
+            R.id.menu_theme_blue    -> { applyColorTheme(Theme.BLUE);    true }
+            R.id.menu_theme_pastel  -> { applyColorTheme(Theme.PASTEL);  true }
+            R.id.menu_theme_neon    -> { applyColorTheme(Theme.NEON);    true }
+            R.id.menu_theme_candy   -> { applyColorTheme(Theme.CANDY);   true }
             else -> super.onOptionsItemSelected(item)
         }
     }

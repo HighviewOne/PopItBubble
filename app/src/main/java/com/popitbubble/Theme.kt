@@ -50,6 +50,6 @@ enum class Theme(val displayName: String, val colors: List<Int>) {
     ));
 
     companion object {
-        fun byName(name: String): Theme = values().find { it.displayName == name } ?: RAINBOW
+        fun byName(name: String?): Theme = entries.find { it.displayName == name } ?: RAINBOW
     }
 }

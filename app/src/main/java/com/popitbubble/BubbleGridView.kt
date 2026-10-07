@@ -41,11 +41,9 @@ class BubbleGridView @JvmOverloads constructor(
     private val bubbles = mutableListOf<Bubble>()
 
     // Theme management
-    private var currentThemeEnum = Theme.RAINBOW
-    var currentTheme: String
-        get() = currentThemeEnum.displayName
+    var theme: Theme = Theme.RAINBOW
         set(value) {
-            currentThemeEnum = Theme.byName(value)
+            field = value
             recolorBubbles()
         }
 
@@ -140,7 +138,7 @@ class BubbleGridView @JvmOverloads constructor(
         val cellH = (height - paddingV * 2) / rows
         val radius = GridMath.bubbleRadius(cellW, cellH)
 
-        val colorList = currentThemeEnum.colors
+        val colorList = theme.colors
         var idx = 0
 
         for (row in 0 until rows) {
@@ -173,7 +171,7 @@ class BubbleGridView @JvmOverloads constructor(
     /** Applies the current theme's colours in place, keeping popped state and animations. */
     private fun recolorBubbles() {
         if (bubbles.isEmpty()) return  // not laid out yet; initBubbles() will colour them
-        val colorList = currentThemeEnum.colors
+        val colorList = theme.colors
         bubbles.forEachIndexed { i, b -> b.color = colorList[i % colorList.size] }
         clearShaderCaches()
         prepareRendering(bubbles[0].radius)
@@ -190,7 +188,7 @@ class BubbleGridView @JvmOverloads constructor(
         poppedSprites.clear()
         spriteHalf = GridMath.spriteHalfSize(r)
         val size = spriteHalf * 2
-        currentThemeEnum.colors.distinct().forEach { color ->
+        theme.colors.distinct().forEach { color ->
             inflatedSprites[color] = renderSprite(size) { drawInflatedBubble(it, r, color) }
             poppedSprites[color] = renderSprite(size) { drawPoppedBubble(it, r, color) }
         }
@@ -215,7 +213,7 @@ class BubbleGridView @JvmOverloads constructor(
     }
 
     private fun prepareShaders(r: Float) {
-        val colorList = currentThemeEnum.colors
+        val colorList = theme.colors
         
         // Specular highlight is the same for all bubbles
         specShader = RadialGradient(

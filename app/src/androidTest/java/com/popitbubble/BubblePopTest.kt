@@ -29,7 +29,7 @@ class BubblePopTest {
     fun setUp() {
         // Start every test from defaults (5×5 grid, no best time), whatever
         // earlier tests or manual runs saved. Clear before launching so
-        // MainActivity's Prefs.load() picks up the defaults.
+        // Prefs reads through to SharedPreferences, so the app sees the defaults.
         InstrumentationRegistry.getInstrumentation().targetContext
             .getSharedPreferences("popitbubble_prefs", Context.MODE_PRIVATE)
             .edit().clear().commit()
