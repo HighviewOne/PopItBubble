@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0
+
+### Added
+- Challenge Mode keeps a best time for each grid size. An existing best time moves to the grid size you last played.
+- TalkBack support: each bubble is announced by row, column and state, and can be popped with a double-tap.
+- Adaptive launcher icon for Android 8+, with a monochrome layer for themed icons on Android 13+.
+- The Challenge Mode menu item shows a checkmark while it's on.
+
+### Changed
+- All on-screen text moved into `strings.xml`, so the app can be translated.
+- Settings are read and written directly through SharedPreferences (simpler and no in-memory copy to drift).
+
 ## 1.3.1
 
 Maintenance release: no gameplay changes.
