@@ -14,6 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.not
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -29,7 +30,7 @@ class BubblePopTest {
     fun setUp() {
         // Start every test from defaults (5×5 grid, no best time), whatever
         // earlier tests or manual runs saved. Clear before launching so
-        // MainActivity's Prefs.load() picks up the defaults.
+        // Prefs reads through to SharedPreferences, so the app sees the defaults.
         InstrumentationRegistry.getInstrumentation().targetContext
             .getSharedPreferences("popitbubble_prefs", Context.MODE_PRIVATE)
             .edit().clear().commit()
@@ -102,6 +103,16 @@ class BubblePopTest {
         onView(withId(R.id.challengeBar)).check(matches(isDisplayed()))
     }
 
+    @Test
+    fun challenge_menu_item_shows_checked_state() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        scenario.onActivity { activity ->
+            assertTrue(activity.isChallengeMenuCheckedForTest())
+        }
+    }
+
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     @Test
@@ -125,6 +136,41 @@ class BubblePopTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun best_time_label_follows_the_grid_size() {
+        // Relaunch with a 4×4 record only.
+        scenario.close()
+        Prefs.init(InstrumentationRegistry.getInstrumentation().targetContext)
+        Prefs.setBestTimeMs(4, 3_200L)
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        onView(withId(R.id.tvBestTime)).check(matches(withText("")))   // 5×5: no record
+
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("Grid Size")).perform(click())
+        onView(withText("4 × 4  (16 bubbles)")).perform(click())
+        onView(withId(R.id.tvBestTime)).check(matches(withText("Best: 3.2s")))
+    }
+
+    // ── Accessibility ─────────────────────────────────────────────────────────
+
+    @Test
+    fun bubbles_are_exposed_to_accessibility_and_poppable() {
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            // Index 7 = row 2, column 3 on the default 5×5 grid.
+            assertEquals("Bubble, row 2, column 3", grid.accessibilityDescriptionForTest(7).toString())
+            assertTrue(grid.accessibilityClickForTest(7))
+            assertEquals("Popped bubble, row 2, column 3", grid.accessibilityDescriptionForTest(7).toString())
+            // A popped bubble no longer offers the click action.
+            assertFalse(grid.accessibilityClickForTest(7))
+        }
+        onView(withId(R.id.tvCounter)).check(matches(withText("1 / 25")))
     }
 
     // ── Theme switching ───────────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.BounceInterpolator
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private var finalElapsedMs = 0L
     private var celebrationAnim: AnimatorSet? = null
     private val celebrationResetRunnable = Runnable { resetGame() }
+    private var optionsMenu: Menu? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        Prefs.load(this)
+        Prefs.init(this)
 
         soundManager = SoundManager(this)
         binding.bubbleGridView.soundManager = soundManager
@@ -45,11 +47,12 @@ class MainActivity : AppCompatActivity() {
         // counter total is set from this callback rather than in onCreate.
         binding.bubbleGridView.onGridChangedListener = { total ->
             updateCounter(binding.bubbleGridView.getPoppedCount(), total)
+            updateBestTimeLabel()
         }
 
         // Restore saved grid size and theme
         binding.bubbleGridView.setGridSize(Prefs.gridSize, Prefs.gridSize)
-        binding.bubbleGridView.currentTheme = Prefs.colorTheme
+        binding.bubbleGridView.theme = Prefs.colorTheme
 
         binding.bubbleGridView.onPopListener = { popped, total ->
             updateCounter(popped, total)
@@ -106,41 +109,43 @@ class MainActivity : AppCompatActivity() {
         // only the mode is restored; a run in progress is not.
         challengeMode = savedInstanceState.getBoolean("challengeMode", false)
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
+        invalidateOptionsMenu()
     }
 
     private fun updateCounter(popped: Int, total: Int) {
-        binding.tvCounter.text = "$popped / $total"
+        binding.tvCounter.text = getString(R.string.counter_format, popped, total)
     }
 
     private fun toggleChallengeMode() {
         challengeMode = !challengeMode
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
         if (!challengeMode) binding.chronometer.stop()
+        invalidateOptionsMenu()
         resetGame()
     }
 
     private fun checkBestTime(elapsedMs: Long) {
-        val best = Prefs.bestTimeMs
-        if (best == 0L || elapsedMs < best) {
-            Prefs.bestTimeMs = elapsedMs
-            Prefs.save(this)
-        }
+        val size = Prefs.gridSize
+        val best = Prefs.bestTimeMs(size)
+        if (best == 0L || elapsedMs < best) Prefs.setBestTimeMs(size, elapsedMs)
         updateBestTimeLabel()
     }
 
+    /** Shows the best time for the current grid size; each size keeps its own record. */
     private fun updateBestTimeLabel() {
-        val best = Prefs.bestTimeMs
-        binding.tvBestTime.text = if (best > 0L) "Best: ${formatTime(best)}" else ""
+        val best = Prefs.bestTimeMs(Prefs.gridSize)
+        binding.tvBestTime.text = if (best > 0L) getString(R.string.best_time_format, formatTime(best)) else ""
     }
 
     private fun formatTime(ms: Long): String {
         val s = ms / 1000
         val tenths = (ms % 1000) / 100
-        return "%d.%ds".format(s, tenths)
+        return getString(R.string.time_seconds_format, s, tenths)
     }
 
     private fun showAllPoppedCelebration(timeStr: String?) {
-        binding.tvAllPopped.text = if (timeStr != null) "🎉 ${timeStr}! 🎉" else "🎉 All Popped! 🎉"
+        binding.tvAllPopped.text = if (timeStr != null) getString(R.string.all_popped_time_format, timeStr)
+            else getString(R.string.all_popped)
         binding.tvAllPopped.visibility = View.VISIBLE
         binding.tvAllPopped.alpha  = 0f
         binding.tvAllPopped.scaleX = 0.5f
@@ -183,22 +188,27 @@ class MainActivity : AppCompatActivity() {
     private fun setGridSize(size: Int) {
         // A new grid is a new game: also resets the challenge clock.
         resetGame()
-        binding.bubbleGridView.setGridSize(size, size)
+        // Saved before the grid rebuilds so onGridChangedListener shows this size's best time.
         Prefs.gridSize = size
-        Prefs.save(this)
+        binding.bubbleGridView.setGridSize(size, size)
     }
 
-    private fun applyColorTheme(name: String) {
+    private fun applyColorTheme(theme: Theme) {
         // Recolouring keeps popped bubbles, so the run (and clock) carry on.
-        binding.bubbleGridView.currentTheme = name
+        binding.bubbleGridView.theme = theme
         updateCounter(binding.bubbleGridView.getPoppedCount(), binding.bubbleGridView.getTotalCount())
-        Prefs.colorTheme = name
-        Prefs.save(this)
+        Prefs.colorTheme = theme
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        optionsMenu = menu
         return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.menu_challenge)?.isChecked = challengeMode
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -210,15 +220,19 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_5x5 -> { setGridSize(5); true }
             R.id.menu_6x6 -> { setGridSize(6); true }
             R.id.menu_7x7 -> { setGridSize(7); true }
-            R.id.menu_theme_rainbow -> { applyColorTheme("rainbow"); true }
-            R.id.menu_theme_pink   -> { applyColorTheme("pink");    true }
-            R.id.menu_theme_blue   -> { applyColorTheme("blue");    true }
-            R.id.menu_theme_pastel -> { applyColorTheme("pastel");  true }
-            R.id.menu_theme_neon   -> { applyColorTheme("neon");    true }
-            R.id.menu_theme_candy  -> { applyColorTheme("candy");   true }
+            R.id.menu_theme_rainbow -> { applyColorTheme(Theme.RAINBOW); true }
+            R.id.menu_theme_pink    -> { applyColorTheme(Theme.PINK);    true }
+            R.id.menu_theme_blue    -> { applyColorTheme(Theme.BLUE);    true }
+            R.id.menu_theme_pastel  -> { applyColorTheme(Theme.PASTEL);  true }
+            R.id.menu_theme_neon    -> { applyColorTheme(Theme.NEON);    true }
+            R.id.menu_theme_candy   -> { applyColorTheme(Theme.CANDY);   true }
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+    @VisibleForTesting
+    internal fun isChallengeMenuCheckedForTest(): Boolean =
+        optionsMenu?.findItem(R.id.menu_challenge)?.isChecked == true
 
     override fun onDestroy() {
         super.onDestroy()

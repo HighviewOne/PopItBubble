@@ -25,23 +25,17 @@ class SettingsActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.settingsToolbar)
         supportActionBar?.apply {
-            title = "Settings"
+            title = getString(R.string.settings)
             setDisplayHomeAsUpEnabled(true)
         }
 
-        Prefs.load(this)
+        Prefs.init(this)
 
         binding.switchSound.isChecked  = Prefs.soundEnabled
         binding.switchHaptic.isChecked = Prefs.hapticEnabled
 
-        binding.switchSound.setOnCheckedChangeListener { _, checked ->
-            Prefs.soundEnabled = checked
-            Prefs.save(this)
-        }
-        binding.switchHaptic.setOnCheckedChangeListener { _, checked ->
-            Prefs.hapticEnabled = checked
-            Prefs.save(this)
-        }
+        binding.switchSound.setOnCheckedChangeListener { _, checked -> Prefs.soundEnabled = checked }
+        binding.switchHaptic.setOnCheckedChangeListener { _, checked -> Prefs.hapticEnabled = checked }
     }
 
     override fun onSupportNavigateUp(): Boolean {
