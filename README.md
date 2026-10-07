@@ -57,7 +57,7 @@
 
 ## What's New
 
-Since v1.2.0 (unreleased):
+New in v1.3.0:
 
 - 🐛 **Game fixes** — correct pop counter on launch, Challenge Mode times no longer include the celebration delay, theme and grid changes no longer desync the counter or clock
 - 📱 **Android 15 ready** — content stays clear of the status and navigation bars under enforced edge-to-edge
@@ -200,6 +200,9 @@ For local signed builds, put `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` a
 Grab the latest APK from [Releases](https://github.com/HighviewOne/PopItBubble/releases/latest).
 
 > Enable **Install from unknown sources** in Android Settings → Apps before installing.
+
+> Upgrading from v1.2.0 or earlier? Those APKs were debug-signed; uninstall the
+> old version once before installing v1.3.0. Later updates install normally.
 
 ---
 
