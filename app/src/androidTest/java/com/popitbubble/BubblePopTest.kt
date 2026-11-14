@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Color
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.view.View
+import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
@@ -211,6 +213,27 @@ class BubblePopTest {
         onView(withText("⏱  Challenge Mode")).perform(click())
         scenario.onActivity { activity ->
             assertTrue(activity.isChallengeMenuCheckedForTest())
+        }
+    }
+
+    // ── Edge-to-edge (Android 15 draws behind the system bars) ───────────────
+
+    @Test
+    fun toolbar_and_reset_button_clear_the_system_bars() {
+        scenario.onActivity { activity ->
+            val root = activity.window.decorView
+            val bars = WindowInsetsCompat.toWindowInsetsCompat(root.rootWindowInsets, root)
+                .getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val loc = IntArray(2)
+
+            activity.findViewById<View>(R.id.toolbar).getLocationOnScreen(loc)
+            assertTrue("toolbar top ${loc[1]} is under the status bar (${bars.top})", loc[1] >= bars.top)
+
+            val fab = activity.findViewById<View>(R.id.fabReset)
+            fab.getLocationOnScreen(loc)
+            val fabBottom = loc[1] + fab.height
+            val limit = root.height - bars.bottom
+            assertTrue("reset button bottom $fabBottom is under the navigation bar ($limit)", fabBottom <= limit)
         }
     }
 
