@@ -105,6 +105,23 @@ class BubblePopTest {
         onView(withId(R.id.tvCounter)).check(matches(withText("5 / 25")))
     }
 
+    @Test
+    fun flick_with_no_move_events_pops_along_the_path() {
+        // A quick flick can go from DOWN straight to UP; the lift still carries the path.
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            val from = grid.bubbleCenterForTest(10)
+            val to = grid.bubbleCenterForTest(14)
+            val t = SystemClock.uptimeMillis()
+            for ((action, p) in listOf(MotionEvent.ACTION_DOWN to from, MotionEvent.ACTION_UP to to)) {
+                val e = MotionEvent.obtain(t, t, action, p.x, p.y, 0)
+                grid.dispatchTouchEvent(e)
+                e.recycle()
+            }
+        }
+        onView(withId(R.id.tvCounter)).check(matches(withText("5 / 25")))
+    }
+
     // ── Surviving recreation (font size, language, split screen…) ────────────
 
     @Test

@@ -404,26 +404,31 @@ class BubbleGridView @JvmOverloads constructor(
                 popAlong(x, y, x, y)
             }
             MotionEvent.ACTION_MOVE -> {
-                for (p in 0 until event.pointerCount) {
-                    val id = event.getPointerId(p)
-                    if (id !in 0 until MAX_POINTERS) {
-                        popAlong(event.getX(p), event.getY(p), event.getX(p), event.getY(p))
-                        continue
-                    }
-                    // Batched samples since the last event, then the current position.
-                    for (h in 0 until event.historySize) {
-                        traceTo(id, event.getHistoricalX(p, h), event.getHistoricalY(p, h))
-                    }
-                    traceTo(id, event.getX(p), event.getY(p))
-                }
+                for (p in 0 until event.pointerCount) tracePointer(event, p)
             }
-            // Popping happens on down/move; report the gesture as a click for accessibility services.
-            MotionEvent.ACTION_UP -> performClick()
+            // A lift carries the finger's last stretch of movement: a quick flick
+            // can go from DOWN straight to UP with no MOVE in between.
+            MotionEvent.ACTION_POINTER_UP -> tracePointer(event, event.actionIndex)
+            MotionEvent.ACTION_UP -> {
+                tracePointer(event, event.actionIndex)
+                // Report the gesture as a click for accessibility services.
+                performClick()
+            }
         }
         return true
     }
 
     override fun performClick(): Boolean = super.performClick()
+
+    /** Pops along pointer [p]'s path: its batched samples since the last event, then its current position. */
+    private fun tracePointer(event: MotionEvent, p: Int) {
+        val id = event.getPointerId(p)
+        if (id !in 0 until MAX_POINTERS) return
+        for (h in 0 until event.historySize) {
+            traceTo(id, event.getHistoricalX(p, h), event.getHistoricalY(p, h))
+        }
+        traceTo(id, event.getX(p), event.getY(p))
+    }
 
     private fun traceTo(id: Int, x: Float, y: Float) {
         popAlong(lastX[id], lastY[id], x, y)
