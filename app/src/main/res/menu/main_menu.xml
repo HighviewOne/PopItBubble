@@ -13,10 +13,12 @@
         android:title="@string/grid_size"
         app:showAsAction="never">
         <menu>
-            <item android:id="@+id/menu_4x4" android:title="@string/grid_4x4"/>
-            <item android:id="@+id/menu_5x5" android:title="@string/grid_5x5"/>
-            <item android:id="@+id/menu_6x6" android:title="@string/grid_6x6"/>
-            <item android:id="@+id/menu_7x7" android:title="@string/grid_7x7"/>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/menu_4x4" android:title="@string/grid_4x4"/>
+                <item android:id="@+id/menu_5x5" android:title="@string/grid_5x5"/>
+                <item android:id="@+id/menu_6x6" android:title="@string/grid_6x6"/>
+                <item android:id="@+id/menu_7x7" android:title="@string/grid_7x7"/>
+            </group>
         </menu>
     </item>
 
@@ -36,12 +38,14 @@
         android:title="@string/color_theme"
         app:showAsAction="never">
         <menu>
-            <item android:id="@+id/menu_theme_rainbow" android:title="@string/theme_rainbow"/>
-            <item android:id="@+id/menu_theme_pink"    android:title="@string/theme_pink"/>
-            <item android:id="@+id/menu_theme_blue"    android:title="@string/theme_blue"/>
-            <item android:id="@+id/menu_theme_pastel"  android:title="@string/theme_pastel"/>
-            <item android:id="@+id/menu_theme_neon"    android:title="@string/theme_neon"/>
-            <item android:id="@+id/menu_theme_candy"   android:title="@string/theme_candy"/>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/menu_theme_rainbow" android:title="@string/theme_rainbow"/>
+                <item android:id="@+id/menu_theme_pink"    android:title="@string/theme_pink"/>
+                <item android:id="@+id/menu_theme_blue"    android:title="@string/theme_blue"/>
+                <item android:id="@+id/menu_theme_pastel"  android:title="@string/theme_pastel"/>
+                <item android:id="@+id/menu_theme_neon"    android:title="@string/theme_neon"/>
+                <item android:id="@+id/menu_theme_candy"   android:title="@string/theme_candy"/>
+            </group>
         </menu>
     </item>
 

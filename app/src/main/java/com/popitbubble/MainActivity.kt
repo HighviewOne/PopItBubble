@@ -26,6 +26,9 @@ class MainActivity : AppCompatActivity() {
     private var challengeMode = false
     private var challengeStarted = false
     private var finalElapsedMs = 0L
+    // Run time banked while the app is in the background; the clock only counts while it's on screen.
+    private var pausedElapsedMs = -1L
+    private var isOnScreen = false
     private var celebrationAnim: AnimatorSet? = null
     private val celebrationResetRunnable = Runnable { resetGame() }
     private var optionsMenu: Menu? = null
@@ -46,8 +49,12 @@ class MainActivity : AppCompatActivity() {
         // The grid is only built once the view has been measured, so the
         // counter total is set from this callback rather than in onCreate.
         binding.bubbleGridView.onGridChangedListener = { total ->
-            updateCounter(binding.bubbleGridView.getPoppedCount(), total)
+            val popped = binding.bubbleGridView.getPoppedCount()
+            updateCounter(popped, total)
             updateBestTimeLabel()
+            // A rebuilt empty grid can't have a run in progress.
+            if (popped == 0 && challengeStarted) resetClock()
+            resumeClockIfNeeded()
         }
 
         // Restore saved grid size and theme
@@ -66,12 +73,13 @@ class MainActivity : AppCompatActivity() {
             if (challengeMode && challengeStarted && popped == total) {
                 binding.chronometer.stop()
                 finalElapsedMs = SystemClock.elapsedRealtime() - binding.chronometer.base
+                // Recorded now, not in the delayed celebration, so leaving the app can't lose it.
+                checkBestTime(finalElapsedMs)
             }
         }
 
         binding.bubbleGridView.onAllPoppedListener = {
             if (challengeMode && challengeStarted) {
-                checkBestTime(finalElapsedMs)
                 showAllPoppedCelebration(formatTime(finalElapsedMs))
             } else {
                 showAllPoppedCelebration(null)
@@ -98,17 +106,63 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** True while a timed run is under way (started, not yet cleared). */
+    private fun runInProgress(): Boolean {
+        val grid = binding.bubbleGridView
+        return challengeMode && challengeStarted && grid.getPoppedCount() < grid.getTotalCount()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isOnScreen = false
+        if (runInProgress() && pausedElapsedMs < 0) {
+            pausedElapsedMs = SystemClock.elapsedRealtime() - binding.chronometer.base
+            binding.chronometer.stop()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isOnScreen = true
+        resumeClockIfNeeded()
+    }
+
+    /**
+     * Restarts a paused run's clock once the app is on screen and the grid is
+     * built. After recreation the grid is only built at first layout, after
+     * onResume, so onGridChangedListener calls this too.
+     */
+    private fun resumeClockIfNeeded() {
+        if (pausedElapsedMs < 0 || !isOnScreen || binding.bubbleGridView.getTotalCount() == 0) return
+        if (runInProgress()) {
+            binding.chronometer.base = SystemClock.elapsedRealtime() - pausedElapsedMs
+            binding.chronometer.start()
+        }
+        pausedElapsedMs = -1L
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putBoolean("challengeMode", challengeMode)
+        outState.putBoolean(KEY_CHALLENGE_MODE, challengeMode)
+        // The grid saves its own popped bubbles; carry an unfinished run's clock with it.
+        if (runInProgress()) {
+            val elapsed = if (pausedElapsedMs >= 0) pausedElapsedMs
+                else SystemClock.elapsedRealtime() - binding.chronometer.base
+            outState.putLong(KEY_RUN_ELAPSED, elapsed)
+        }
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        // The grid and chronometer always start fresh after recreation, so
-        // only the mode is restored; a run in progress is not.
-        challengeMode = savedInstanceState.getBoolean("challengeMode", false)
+        challengeMode = savedInstanceState.getBoolean(KEY_CHALLENGE_MODE, false)
         binding.challengeBar.visibility = if (challengeMode) View.VISIBLE else View.GONE
+        val elapsed = savedInstanceState.getLong(KEY_RUN_ELAPSED, -1L)
+        if (challengeMode && elapsed >= 0) {
+            // onResume restarts the clock from here (if the grid came back unfinished).
+            challengeStarted = true
+            pausedElapsedMs = elapsed
+            binding.chronometer.base = SystemClock.elapsedRealtime() - elapsed
+        }
         invalidateOptionsMenu()
     }
 
@@ -175,12 +229,17 @@ class MainActivity : AppCompatActivity() {
         binding.tvAllPopped.removeCallbacks(celebrationResetRunnable)
     }
 
-    private fun resetGame() {
-        cancelCelebration()
-        binding.tvAllPopped.visibility = View.GONE
+    private fun resetClock() {
         binding.chronometer.stop()
         binding.chronometer.base = SystemClock.elapsedRealtime()
         challengeStarted = false
+        pausedElapsedMs = -1L
+    }
+
+    private fun resetGame() {
+        cancelCelebration()
+        binding.tvAllPopped.visibility = View.GONE
+        resetClock()
         binding.bubbleGridView.reset()
         updateCounter(0, binding.bubbleGridView.getTotalCount())
     }
@@ -191,6 +250,7 @@ class MainActivity : AppCompatActivity() {
         // Saved before the grid rebuilds so onGridChangedListener shows this size's best time.
         Prefs.gridSize = size
         binding.bubbleGridView.setGridSize(size, size)
+        invalidateOptionsMenu()
     }
 
     private fun applyColorTheme(theme: Theme) {
@@ -198,6 +258,7 @@ class MainActivity : AppCompatActivity() {
         binding.bubbleGridView.theme = theme
         updateCounter(binding.bubbleGridView.getPoppedCount(), binding.bubbleGridView.getTotalCount())
         Prefs.colorTheme = theme
+        invalidateOptionsMenu()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -208,6 +269,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         menu.findItem(R.id.menu_challenge)?.isChecked = challengeMode
+        // findItem also searches the Grid Size and Color Theme submenus.
+        gridSizeMenuIds[Prefs.gridSize]?.let { menu.findItem(it)?.isChecked = true }
+        themeMenuIds[Prefs.colorTheme]?.let { menu.findItem(it)?.isChecked = true }
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -216,17 +280,15 @@ class MainActivity : AppCompatActivity() {
             R.id.menu_reset    -> { resetGame(); true }
             R.id.menu_challenge -> { toggleChallengeMode(); true }
             R.id.menu_settings -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
-            R.id.menu_4x4 -> { setGridSize(4); true }
-            R.id.menu_5x5 -> { setGridSize(5); true }
-            R.id.menu_6x6 -> { setGridSize(6); true }
-            R.id.menu_7x7 -> { setGridSize(7); true }
-            R.id.menu_theme_rainbow -> { applyColorTheme(Theme.RAINBOW); true }
-            R.id.menu_theme_pink    -> { applyColorTheme(Theme.PINK);    true }
-            R.id.menu_theme_blue    -> { applyColorTheme(Theme.BLUE);    true }
-            R.id.menu_theme_pastel  -> { applyColorTheme(Theme.PASTEL);  true }
-            R.id.menu_theme_neon    -> { applyColorTheme(Theme.NEON);    true }
-            R.id.menu_theme_candy   -> { applyColorTheme(Theme.CANDY);   true }
-            else -> super.onOptionsItemSelected(item)
+            else -> {
+                gridSizeMenuIds.entries.firstOrNull { it.value == item.itemId }?.let {
+                    setGridSize(it.key); return true
+                }
+                themeMenuIds.entries.firstOrNull { it.value == item.itemId }?.let {
+                    applyColorTheme(it.key); return true
+                }
+                super.onOptionsItemSelected(item)
+            }
         }
     }
 
@@ -234,9 +296,30 @@ class MainActivity : AppCompatActivity() {
     internal fun isChallengeMenuCheckedForTest(): Boolean =
         optionsMenu?.findItem(R.id.menu_challenge)?.isChecked == true
 
+    @VisibleForTesting
+    internal fun isMenuItemCheckedForTest(id: Int): Boolean =
+        optionsMenu?.findItem(id)?.isChecked == true
+
     override fun onDestroy() {
         super.onDestroy()
         cancelCelebration()
         soundManager.release()
+    }
+
+    private companion object {
+        const val KEY_CHALLENGE_MODE = "challengeMode"
+        const val KEY_RUN_ELAPSED = "runElapsedMs"
+
+        val gridSizeMenuIds = mapOf(
+            4 to R.id.menu_4x4, 5 to R.id.menu_5x5, 6 to R.id.menu_6x6, 7 to R.id.menu_7x7
+        )
+        val themeMenuIds = mapOf(
+            Theme.RAINBOW to R.id.menu_theme_rainbow,
+            Theme.PINK to R.id.menu_theme_pink,
+            Theme.BLUE to R.id.menu_theme_blue,
+            Theme.PASTEL to R.id.menu_theme_pastel,
+            Theme.NEON to R.id.menu_theme_neon,
+            Theme.CANDY to R.id.menu_theme_candy
+        )
     }
 }
