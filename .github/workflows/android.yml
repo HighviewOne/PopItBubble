@@ -58,6 +58,11 @@ jobs:
   instrumented-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # 35 = Android 15, which forces edge-to-edge for targetSdk 35.
+        api-level: [34, 35]
 
     steps:
       - name: Checkout
@@ -81,7 +86,7 @@ jobs:
       - name: Run Espresso tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: google_apis
           disable-animations: true
@@ -92,6 +97,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: instrumented-test-report
+          name: instrumented-test-report-api${{ matrix.api-level }}
           path: app/build/reports/androidTests/connected/
           retention-days: 14
