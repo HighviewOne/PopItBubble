@@ -7,8 +7,10 @@ import android.content.Context
 import android.graphics.*
 import android.os.Build
 import android.os.Bundle
+import android.os.Parcelable
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -16,6 +18,7 @@ import android.view.View
 import android.view.accessibility.AccessibilityEvent
 import android.view.animation.OvershootInterpolator
 import androidx.annotation.VisibleForTesting
+import androidx.core.os.BundleCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
@@ -88,8 +91,37 @@ class BubbleGridView @JvmOverloads constructor(
     private val allPoppedRunnable = Runnable { onAllPoppedListener?.invoke() }
 
     // Haptic
-    @Suppress("DEPRECATION")
-    private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    private val vibrator: Vibrator? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+
+    /**
+     * The system's predefined click where the hardware supports it natively
+     * (crisper, tuned per device), otherwise a short one-shot buzz.
+     */
+    private val popEffect: VibrationEffect? by lazy {
+        val v = vibrator ?: return@lazy null
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                v.areAllEffectsSupported(VibrationEffect.EFFECT_CLICK) ==
+                Vibrator.VIBRATION_EFFECT_SUPPORT_YES ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> VibrationEffect.createOneShot(25, 180)
+            else -> null
+        }
+    }
+
+    // Last position of each pointer id, so a move pops everything along the
+    // finger's path, not just where it is when the frame's event arrives.
+    private val lastX = FloatArray(MAX_POINTERS)
+    private val lastY = FloatArray(MAX_POINTERS)
+
+    // Popped flags restored from saved state, applied once the grid is built.
+    private var pendingPopped: BooleanArray? = null
 
     // Sound
     var soundManager: SoundManager? = null
@@ -101,6 +133,7 @@ class BubbleGridView @JvmOverloads constructor(
 
     fun setGridSize(c: Int, r: Int) {
         cols = c; rows = r
+        pendingPopped = null
         initBubbles()
     }
 
@@ -128,13 +161,20 @@ class BubbleGridView @JvmOverloads constructor(
             Shader.TileMode.CLAMP
         )
 
-        initBubbles()
+        // A resize (split screen, foldable) re-lays out the same game rather than starting a new one.
+        val keep = pendingPopped ?: poppedFlags().takeIf { it.size == cols * rows }
+        pendingPopped = null
+        initBubbles(keep)
     }
 
-    private fun initBubbles() {
+    private fun poppedFlags() = BooleanArray(bubbles.size) { bubbles[it].isPopped }
+
+    /** Builds the grid for the current size; [keepPopped] carries popped state over from an earlier layout. */
+    private fun initBubbles(keepPopped: BooleanArray? = null) {
         if (width == 0 || height == 0) return
 
-        removeCallbacks(allPoppedRunnable)
+        // Same game re-laid out: a pending celebration still applies.
+        if (keepPopped == null) removeCallbacks(allPoppedRunnable)
         animators.values.forEach { it.cancel() }
         animators.clear()
         bubbles.clear()
@@ -153,11 +193,14 @@ class BubbleGridView @JvmOverloads constructor(
             for (col in 0 until cols) {
                 val (cx, cy) = GridMath.bubbleCenter(col, row, cellW, cellH, paddingH, paddingV)
                 val color = colorList[idx % colorList.size]
+                val popped = keepPopped?.getOrNull(idx) == true
                 bubbles.add(
                     Bubble(
                         row = row, col = col,
                         cx = cx, cy = cy, radius = radius,
-                        color = color
+                        color = color,
+                        isPopped = popped,
+                        animScale = if (popped) POPPED_SCALE else 1f
                     )
                 )
                 idx++
@@ -168,6 +211,26 @@ class BubbleGridView @JvmOverloads constructor(
         invalidate()
         a11yHelper.invalidateRoot()
         onGridChangedListener?.invoke(bubbles.size)
+    }
+
+    override fun onSaveInstanceState(): Parcelable = Bundle().apply {
+        putParcelable(KEY_SUPER, super.onSaveInstanceState())
+        putInt(KEY_COLS, cols)
+        putInt(KEY_ROWS, rows)
+        putBooleanArray(KEY_POPPED, poppedFlags())
+    }
+
+    override fun onRestoreInstanceState(state: Parcelable?) {
+        if (state !is Bundle) {
+            super.onRestoreInstanceState(state)
+            return
+        }
+        super.onRestoreInstanceState(BundleCompat.getParcelable(state, KEY_SUPER, Parcelable::class.java))
+        val flags = state.getBooleanArray(KEY_POPPED) ?: return
+        // Restore only an unfinished game of the same size; a cleared grid starts fresh.
+        if (state.getInt(KEY_COLS) != cols || state.getInt(KEY_ROWS) != rows) return
+        if (flags.size != cols * rows || flags.all { it }) return
+        if (width > 0 && height > 0) initBubbles(flags) else pendingPopped = flags
     }
 
     override fun onDetachedFromWindow() {
@@ -332,10 +395,26 @@ class BubbleGridView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN,
-            MotionEvent.ACTION_POINTER_DOWN,
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                val i = event.actionIndex
+                val id = event.getPointerId(i)
+                val x = event.getX(i)
+                val y = event.getY(i)
+                if (id in 0 until MAX_POINTERS) { lastX[id] = x; lastY[id] = y }
+                popAlong(x, y, x, y)
+            }
             MotionEvent.ACTION_MOVE -> {
-                for (pIdx in 0 until event.pointerCount) {
-                    checkTouchAt(event.getX(pIdx), event.getY(pIdx))
+                for (p in 0 until event.pointerCount) {
+                    val id = event.getPointerId(p)
+                    if (id !in 0 until MAX_POINTERS) {
+                        popAlong(event.getX(p), event.getY(p), event.getX(p), event.getY(p))
+                        continue
+                    }
+                    // Batched samples since the last event, then the current position.
+                    for (h in 0 until event.historySize) {
+                        traceTo(id, event.getHistoricalX(p, h), event.getHistoricalY(p, h))
+                    }
+                    traceTo(id, event.getX(p), event.getY(p))
                 }
             }
             // Popping happens on down/move; report the gesture as a click for accessibility services.
@@ -346,9 +425,18 @@ class BubbleGridView @JvmOverloads constructor(
 
     override fun performClick(): Boolean = super.performClick()
 
-    private fun checkTouchAt(tx: Float, ty: Float) {
+    private fun traceTo(id: Int, x: Float, y: Float) {
+        popAlong(lastX[id], lastY[id], x, y)
+        lastX[id] = x
+        lastY[id] = y
+    }
+
+    /** Pops every bubble the finger crossed moving from (x0, y0) to (x1, y1). */
+    private fun popAlong(x0: Float, y0: Float, x1: Float, y1: Float) {
         for ((index, bubble) in bubbles.withIndex()) {
-            if (!bubble.isPopped && GridMath.isTouching(tx, ty, bubble.cx, bubble.cy, bubble.radius)) {
+            if (!bubble.isPopped &&
+                GridMath.segmentTouches(x0, y0, x1, y1, bubble.cx, bubble.cy, bubble.radius)
+            ) {
                 popBubble(index)
             }
         }
@@ -365,7 +453,7 @@ class BubbleGridView @JvmOverloads constructor(
         if (Prefs.hapticEnabled) vibrate()
 
         animators[index]?.cancel()
-        val anim = ValueAnimator.ofFloat(1f, 0.60f, 0.88f).apply {
+        val anim = ValueAnimator.ofFloat(1f, 0.60f, POPPED_SCALE).apply {
             duration = 220
             interpolator = OvershootInterpolator(1.8f)
             addUpdateListener {
@@ -392,8 +480,9 @@ class BubbleGridView @JvmOverloads constructor(
     private fun vibrate() {
         try {
             val vibrator = vibrator ?: return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(25, 180))
+            val effect = popEffect
+            if (effect != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(effect)
             } else {
                 vibrator.vibrate(25)
             }
@@ -426,6 +515,9 @@ class BubbleGridView @JvmOverloads constructor(
     internal fun accessibilityClickForTest(index: Int): Boolean =
         a11yHelper.getAccessibilityNodeProvider(this)
             ?.performAction(index, AccessibilityNodeInfoCompat.ACTION_CLICK, null) == true
+
+    @VisibleForTesting
+    internal fun bubbleCenterForTest(index: Int): PointF = bubbles[index].let { PointF(it.cx, it.cy) }
 
     @VisibleForTesting
     internal fun accessibilityDescriptionForTest(index: Int): CharSequence? =
@@ -473,5 +565,16 @@ class BubbleGridView @JvmOverloads constructor(
             sendEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED)
             return true
         }
+    }
+
+    private companion object {
+        /** MotionEvent pointer ids run 0..31. */
+        const val MAX_POINTERS = 32
+        /** Resting scale of a popped bubble, where the pop animation ends. */
+        const val POPPED_SCALE = 0.88f
+        const val KEY_SUPER = "super"
+        const val KEY_COLS = "cols"
+        const val KEY_ROWS = "rows"
+        const val KEY_POPPED = "popped"
     }
 }

@@ -2,6 +2,8 @@ package com.popitbubble
 
 import android.content.Context
 import android.graphics.Color
+import android.os.SystemClock
+import android.view.MotionEvent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
@@ -12,6 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.not
+import org.hamcrest.Matchers.startsWith
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -80,6 +83,87 @@ class BubblePopTest {
         onView(withId(R.id.bubbleGridView)).perform(click())
         onView(withId(R.id.tvCounter))
             .check(matches(withText("1 / 25")))
+    }
+
+    @Test
+    fun fast_swipe_pops_every_bubble_along_the_path() {
+        // One move event jumps from the first to the last bubble of row 3: the
+        // three bubbles in between have no touch sample on them, but the finger crossed them.
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            val from = grid.bubbleCenterForTest(10)  // row 3, column 1
+            val to = grid.bubbleCenterForTest(14)    // row 3, column 5
+            val t = SystemClock.uptimeMillis()
+            for ((action, p) in listOf(
+                MotionEvent.ACTION_DOWN to from, MotionEvent.ACTION_MOVE to to, MotionEvent.ACTION_UP to to
+            )) {
+                val e = MotionEvent.obtain(t, t, action, p.x, p.y, 0)
+                grid.dispatchTouchEvent(e)
+                e.recycle()
+            }
+        }
+        onView(withId(R.id.tvCounter)).check(matches(withText("5 / 25")))
+    }
+
+    // ── Surviving recreation (font size, language, split screen…) ────────────
+
+    @Test
+    fun popped_bubbles_survive_activity_recreation() {
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            listOf(0, 6, 12).forEach { assertTrue(grid.accessibilityClickForTest(it)) }
+        }
+        scenario.recreate()
+        onView(withId(R.id.tvCounter)).check(matches(withText("3 / 25")))
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            assertEquals("Popped bubble, row 2, column 2", grid.accessibilityDescriptionForTest(6).toString())
+            assertEquals("Bubble, row 2, column 3", grid.accessibilityDescriptionForTest(7).toString())
+        }
+    }
+
+    @Test
+    fun challenge_run_survives_recreation_and_records_a_best_time() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("⏱  Challenge Mode")).perform(click())
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            assertTrue(grid.accessibilityClickForTest(0))
+            assertTrue(grid.accessibilityClickForTest(1))
+        }
+        scenario.recreate()
+        onView(withId(R.id.challengeBar)).check(matches(isDisplayed()))
+        onView(withId(R.id.tvCounter)).check(matches(withText("2 / 25")))
+        // Finishing the restored run still counts as a timed run.
+        scenario.onActivity { activity ->
+            val grid = activity.findViewById<BubbleGridView>(R.id.bubbleGridView)
+            (2 until 25).forEach { assertTrue(grid.accessibilityClickForTest(it)) }
+        }
+        onView(withId(R.id.tvBestTime)).check(matches(withText(startsWith("Best: "))))
+    }
+
+    // ── Menu checkmarks ───────────────────────────────────────────────────────
+
+    @Test
+    fun grid_size_and_theme_menus_check_the_current_choice() {
+        scenario.onActivity { activity ->
+            assertTrue(activity.isMenuItemCheckedForTest(R.id.menu_5x5))
+            assertTrue(activity.isMenuItemCheckedForTest(R.id.menu_theme_rainbow))
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("Grid Size")).perform(click())
+        onView(withText("6 × 6  (36 bubbles)")).perform(click())
+        openActionBarOverflowOrOptionsMenu(context)
+        onView(withText("Color Theme")).perform(click())
+        onView(withText("⚡ Neon")).perform(click())
+        scenario.onActivity { activity ->
+            assertTrue(activity.isMenuItemCheckedForTest(R.id.menu_6x6))
+            assertFalse(activity.isMenuItemCheckedForTest(R.id.menu_5x5))
+            assertTrue(activity.isMenuItemCheckedForTest(R.id.menu_theme_neon))
+            assertFalse(activity.isMenuItemCheckedForTest(R.id.menu_theme_rainbow))
+        }
     }
 
     // ── Reset ─────────────────────────────────────────────────────────────────

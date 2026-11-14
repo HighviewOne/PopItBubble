@@ -32,6 +32,23 @@ object GridMath {
     }
 
     /**
+     * True if the finger path from (x0, y0) to (x1, y1) passes within [radius]
+     * of bubble centre (bx, by). A fast swipe moves far between touch samples,
+     * so checking only the sample points would skip bubbles in between.
+     */
+    fun segmentTouches(
+        x0: Float, y0: Float, x1: Float, y1: Float,
+        bx: Float, by: Float, radius: Float
+    ): Boolean {
+        val dx = x1 - x0
+        val dy = y1 - y0
+        val lenSq = dx * dx + dy * dy
+        // Closest point on the segment to the centre, clamped to the endpoints.
+        val t = if (lenSq == 0f) 0f else (((bx - x0) * dx + (by - y0) * dy) / lenSq).coerceIn(0f, 1f)
+        return isTouching(x0 + t * dx, y0 + t * dy, bx, by, radius)
+    }
+
+    /**
      * Half the side length, in whole pixels, of a square sprite that fits a
      * bubble of [radius] including its drop shadow. The shadow circle is
      * offset by (0.08r, 0.12r) with radius 0.92r and a 0.25r blur; Skia maps a

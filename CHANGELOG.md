@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fast swipes pop every bubble the finger crosses, not just the ones under each touch sample.
+- Changing font size or language, or resizing into split screen, no longer clears the board; an unfinished Challenge run carries on with its time.
+- The Challenge Mode clock pauses while the app is in the background.
+- A Challenge best time is saved the moment the last bubble pops, so leaving during the celebration can't lose it.
+
+### Changed
+- Haptics use the phone's built-in click effect where it has one, for a crisper pop.
+- The Grid Size and Color Theme menus show a checkmark on the current choice.
+- Toolchain: AGP 9.5.1, Gradle 9.9.0.
+
 ## 1.4.0
 
 ### Added

@@ -14,6 +14,35 @@ class GridMathTest {
         assertEquals(60f * 0.42f, r, 0.001f)
     }
 
+    // ── segmentTouches ────────────────────────────────────────────────────────
+
+    @Test
+    fun `segmentTouches catches a bubble between two far-apart samples`() {
+        // Both endpoints are well outside the bubble at (50, 0), but the path crosses it.
+        assertFalse(GridMath.isTouching(0f, 0f, 50f, 0f, 10f))
+        assertFalse(GridMath.isTouching(100f, 0f, 50f, 0f, 10f))
+        assertTrue(GridMath.segmentTouches(0f, 0f, 100f, 0f, 50f, 0f, 10f))
+    }
+
+    @Test
+    fun `segmentTouches ignores a bubble beside the path`() {
+        assertFalse(GridMath.segmentTouches(0f, 0f, 100f, 0f, 50f, 15f, 10f))
+        assertTrue(GridMath.segmentTouches(0f, 0f, 100f, 0f, 50f, 9f, 10f))
+    }
+
+    @Test
+    fun `segmentTouches does not extend past the endpoints`() {
+        // Bubble lies on the line's continuation, beyond the end point.
+        assertFalse(GridMath.segmentTouches(0f, 0f, 100f, 0f, 130f, 0f, 10f))
+        assertTrue(GridMath.segmentTouches(0f, 0f, 100f, 0f, 105f, 0f, 10f))
+    }
+
+    @Test
+    fun `segmentTouches with zero length behaves like isTouching`() {
+        assertTrue(GridMath.segmentTouches(5f, 5f, 5f, 5f, 0f, 0f, 10f))
+        assertFalse(GridMath.segmentTouches(20f, 20f, 20f, 20f, 0f, 0f, 10f))
+    }
+
     @Test
     fun `bubbleRadius uses custom fillFactor`() {
         val r = GridMath.bubbleRadius(100f, 100f, fillFactor = 0.5f)
