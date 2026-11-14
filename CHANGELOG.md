@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.1
 
 ### Fixed
 - Fast swipes pop every bubble the finger crosses, not just the ones under each touch sample.

@@ -58,15 +58,15 @@
 
 ## What's New
 
-New in v1.4.0:
+New in v1.4.1:
 
-- ⏱️ **A best time per grid size** — 4×4 and 7×7 runs no longer compete for one record; an existing best time carries over to the grid size you last played
-- ♿ **TalkBack support** — every bubble is announced by row, column and whether it's popped, and can be popped with a double-tap
-- 🎨 **Adaptive launcher icon** — fits every launcher shape on Android 8+, with a themed (monochrome) icon on Android 13+
-- ✅ **Challenge Mode checkmark** in the menu shows whether it's on
-- 🌍 **Translatable** — all on-screen text now lives in `strings.xml`
+- 👆 **Fast swipes pop everything they cross** — a quick flick across a row no longer skips bubbles
+- 💾 **The board survives** changing font size or language, or switching to split screen; an unfinished Challenge run keeps its time
+- ⏸️ **The Challenge clock pauses** while the app is in the background, and a best time is saved the moment the last bubble pops
+- 📳 **Crisper haptics** on phones with a built-in click effect
+- ✅ **Grid Size and Color Theme menus** show which one you're using
 
-Earlier in v1.3.0: game-state fixes, Android 15 edge-to-edge support, sprite rendering, a release-signed ~1.2 MB APK and Espresso tests in CI.
+Earlier in v1.4.0: a best time per grid size, TalkBack support, an adaptive launcher icon and translatable text. In v1.3.0: Android 15 edge-to-edge support, sprite rendering and a release-signed ~1.2 MB APK.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
